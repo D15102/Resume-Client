@@ -20,28 +20,35 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
   const { login } = useAuth();
-  const { isLight } = useTheme() 
+  const { isLight } = useTheme();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const response = await fetch(`${serverUrl}/api/auth/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
-      if (response.ok) {
-        login(data.token,data.user);
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+
+      if (data.token && data.user) {
+        login(data.token, data.user);
         toast.success("Login successful!");
         navigate("/dashboard");
       } else {
-        toast.error(data.message || "Login failed");
+        throw new Error('Invalid response from server');
       }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      toast.error("An error occurred during login");
+      console.error('Login error:', error);
+      toast.error(error instanceof Error ? error.message : "An error occurred during login");
     }
   };
 
@@ -130,3 +137,4 @@ const Login = () => {
 };
 
 export default Login;
+
