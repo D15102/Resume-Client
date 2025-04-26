@@ -11,7 +11,8 @@ const pageVariants = {
 };
 
 const SignUp = () => {
-  const serverUrl = import.meta.env.VITE_SERVER_URL;
+  // Use the proxy configured in vite.config.ts instead of the direct server URL
+  const serverUrl = '';
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,7 +28,7 @@ const SignUp = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password }),
       });
-      
+
       const data = await response.json();
       if (response.ok) {
         toast.success('Account created successfully!');

@@ -15,7 +15,8 @@ const pageVariants = {
 };
 
 const Login = () => {
-  const serverUrl = import.meta.env.VITE_SERVER_URL;
+  // Use the proxy configured in vite.config.ts instead of the direct server URL
+  const serverUrl = '';
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
@@ -25,16 +26,23 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      console.log("Server URL:", serverUrl);
+      console.log("Attempting to login with:", { email, password: "********" });
+
       const response = await fetch(`${serverUrl}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, password }),
+        credentials: "include"
       });
 
+      console.log("Response status:", response.status);
+
       const data = await response.json();
-      
+      console.log("Response data:", data);
+
       if (!response.ok) {
         throw new Error(data.message || 'Login failed');
       }
@@ -59,7 +67,7 @@ const Login = () => {
   useEffect(()=>{console.log(eyeOpen)},[eyeOpen])
 
   return (
-    <motion.div 
+    <motion.div
     className={`min-h-[calc(100vh-4.1rem)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 ${isLight ? 'bg-white' : 'bg-gray-800' }`}
     variants={pageVariants}
       initial="initial"
@@ -98,7 +106,7 @@ const Login = () => {
                 onChange={(e) => setPassword(e.target.value)}
               />
               {
-                eyeOpen ? ( <IoMdEye className="absolute cursor-pointer text-[1.65rem] ml-3 mt-[18px] mr-3 z-10" onClick={handleEye}/> ) 
+                eyeOpen ? ( <IoMdEye className="absolute cursor-pointer text-[1.65rem] ml-3 mt-[18px] mr-3 z-10" onClick={handleEye}/> )
                 :
                 ( <IoMdEyeOff className="absolute cursor-pointer text-[1.65rem] mt-[18px] mr-3 z-10" onClick={handleEye}/> )
               }

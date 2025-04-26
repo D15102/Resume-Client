@@ -23,7 +23,8 @@ const pageVariants = {
 };
 
 const Dashboard = () => {
-  const serverUrl = import.meta.env.VITE_SERVER_URL;
+  // Use empty string to use the proxy configured in vite.config.ts
+  const serverUrl = '';
 
   const { isLight } = useTheme();
   const [file, setFile] = useState<File | null>(null);
@@ -57,8 +58,10 @@ const Dashboard = () => {
       const response = await fetch(`${serverUrl}/api/resume/analyze`, {
         method: "POST",
         body: formData,
+        credentials: 'include',
         headers: {
           Authorization: `Bearer ${token}`,
+          // Don't set Content-Type when using FormData, browser will set it automatically with boundary
         },
       });
 
@@ -73,7 +76,8 @@ const Dashboard = () => {
       }
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      toast.error("An error occurred while analyzing the resume");
+      console.error("Resume analysis error:", error);
+      toast.error("An error occurred while analyzing the resume. Please try again.");
     } finally {
       setAnalyzing(false);
     }
@@ -116,8 +120,8 @@ const Dashboard = () => {
   };
 
   return (
-    
-    <motion.div 
+
+    <motion.div
     className={`${isLight ? 'bg-gray-100' : 'bg-gray-900 text-white'} min-h-[calc(100vh-4.1rem)]`}
     variants={pageVariants}
       initial="initial"
@@ -140,7 +144,7 @@ const Dashboard = () => {
           <motion.div
           whileHover={{ scale : 1.1 }}
           transition={{ duration : 0.2 }}
-          
+
             {...getRootProps()}
             className={`mb-10 border-2 border-dashed rounded-lg p-10 text-center select-none cursor-pointer ${
               isDragActive ? "border-blue-500 bg-blue-50" : "border-gray-300"

@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface AuthContextType {
   user: unknown;
-  login: (token: string) => void;
+  login: (token: string, userData: any) => void;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -16,8 +16,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     const token = localStorage.getItem('token');
-    localStorage.setItem('user', JSON.stringify(user));
-    setUser(user);
+
     if (storedUser && token) {
       // Validate token and set user
       setUser(JSON.parse(storedUser));
@@ -37,7 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     setIsAuthenticated(false);
   };
-  
+
 
   return (
     <AuthContext.Provider value={{ user, login, logout, isAuthenticated }}>
