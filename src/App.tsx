@@ -7,11 +7,15 @@ import SignUp from './pages/SignUp.tsx';
 import Dashboard from './pages/Dashboard.tsx';
 import ResumeTemplates from './pages/ResumeTemplates.tsx';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import EditResume from './pages/EditResume.tsx'
 import ProtectedRoute from './pages/ProtectedRoute.tsx';
 import EditResumePage from './pages/EditResumePage.tsx';
 import { AnimatePresence } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
+
+// Import global styles
+import './styles/globals.css';
 
 function AppRoutes() {
   const location = useLocation();
@@ -38,7 +42,31 @@ function AppRoutes() {
           } />
         </Routes>
       </AnimatePresence>
-      <Toaster position="top-right" />
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          // Default options for all toasts
+          className: '',
+          style: {
+            borderRadius: '8px',
+            background: 'var(--toaster-bg, #fff)',
+            color: 'var(--toaster-color, #333)',
+          },
+          // Customize based on toast type
+          success: {
+            style: {
+              background: 'var(--toaster-success-bg, #10b981)',
+              color: 'var(--toaster-success-color, #fff)',
+            },
+          },
+          error: {
+            style: {
+              background: 'var(--toaster-error-bg, #ef4444)',
+              color: 'var(--toaster-error-color, #fff)',
+            },
+          },
+        }}
+      />
     </>
   );
 }
@@ -46,9 +74,11 @@ function AppRoutes() {
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
+      <ThemeProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </ThemeProvider>
     </AuthProvider>
   );
 }

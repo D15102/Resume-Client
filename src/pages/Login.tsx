@@ -1,16 +1,28 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { LogIn } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+import { LogIn, Mail, Lock } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
 import { IoMdEyeOff } from "react-icons/io";
 import { IoMdEye } from "react-icons/io";
 import { useTheme } from "../context/ThemeContext";
-import {motion} from 'framer-motion'
+import { motion } from 'framer-motion';
 
 const pageVariants = {
   initial: { opacity: 0, y: -20 },
   animate: { opacity: 1, y: 0 },
+};
+
+const formVariants = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0, transition: { delay: 0.2 } },
+};
+
+const buttonVariants = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1, transition: { delay: 0.3 } },
+  hover: { scale: 1.03 },
+  tap: { scale: 0.97 },
 };
 
 const Login = () => {
@@ -67,77 +79,223 @@ const Login = () => {
 
   return (
     <motion.div
-    className={`min-h-[calc(100vh-4.1rem)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 ${isLight ? 'bg-white' : 'bg-gray-800' }`}
-    variants={pageVariants}
+      className={`min-h-[calc(100vh-4.1rem)] flex items-center justify-center py-6 px-3 xs:py-8 xs:px-4 sm:px-6 lg:px-8 ${
+        isLight ? 'bg-gray-50' : 'bg-gray-900'
+      }`}
+      variants={pageVariants}
       initial="initial"
       animate="animate"
       transition={{ duration: 0.5 }}
     >
-      <div className="max-w-md w-full space-y-8">
-        <div>
+      <div className="w-full max-w-md space-y-6 xs:space-y-8">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
           <div className="flex justify-center">
-            <LogIn className="h-12 w-12 text-blue-600" />
+            <div className={`p-2 xs:p-3 rounded-full ${
+              isLight ? 'bg-blue-100' : 'bg-gray-800'
+            }`}>
+              <LogIn className={`h-8 w-8 xs:h-10 xs:w-10 ${
+                isLight ? 'text-primary-light' : 'text-primary-dark'
+              }`} />
+            </div>
           </div>
-          <h2 className={`mt-6 text-center text-3xl font-extrabold ${isLight ? 'text-gray-900' : 'text-zinc-200' }`}>
+          <h2 className={`mt-4 xs:mt-6 text-center text-xl xs:text-2xl sm:text-3xl font-bold ${
+            isLight ? 'text-gray-900' : 'text-gray-100'
+          }`}>
             Sign in to your account
           </h2>
-        </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
+          <p className={`mt-2 text-center text-xs xs:text-sm ${
+            isLight ? 'text-gray-600' : 'text-gray-400'
+          }`}>
+            Or{' '}
+            <Link to="/signup" className={`font-medium ${
+              isLight ? 'text-primary-light hover:text-blue-600' : 'text-primary-dark hover:text-emerald-400'
+            }`}>
+              create a new account
+            </Link>
+          </p>
+        </motion.div>
+
+        {/* Form */}
+        <motion.form
+          className="mt-6 xs:mt-8 space-y-5 xs:space-y-6"
+          onSubmit={handleSubmit}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <div className="rounded-md shadow-sm space-y-3 xs:space-y-4">
+            {/* Email Field */}
             <div>
-              <input
-                type="email"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+              <label htmlFor="email" className={`block text-xs xs:text-sm font-medium mb-1 ${
+                isLight ? 'text-gray-700' : 'text-gray-300'
+              }`}>
+                Email address
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-2 xs:pl-3 flex items-center pointer-events-none">
+                  <Mail className={`h-4 w-4 xs:h-5 xs:w-5 ${
+                    isLight ? 'text-gray-400' : 'text-gray-500'
+                  }`} />
+                </div>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  className={`appearance-none block w-full pl-8 xs:pl-10 pr-3 py-2 border rounded-md text-xs xs:text-sm ${
+                    isLight
+                      ? 'border-gray-300 placeholder-gray-400 text-gray-900 focus:ring-primary-light focus:border-primary-light bg-white'
+                      : 'border-gray-700 placeholder-gray-500 text-white focus:ring-primary-dark focus:border-primary-dark bg-gray-800'
+                  } focus:outline-none focus:ring-2`}
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
             </div>
-            <div className="flex justify-end select-none">
+
+            {/* Password Field */}
+            <div>
+              <label htmlFor="password" className={`block text-xs xs:text-sm font-medium mb-1 ${
+                isLight ? 'text-gray-700' : 'text-gray-300'
+              }`}>
+                Password
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-2 xs:pl-3 flex items-center pointer-events-none">
+                  <Lock className={`h-4 w-4 xs:h-5 xs:w-5 ${
+                    isLight ? 'text-gray-400' : 'text-gray-500'
+                  }`} />
+                </div>
+                <input
+                  id="password"
+                  name="password"
+                  type={eyeOpen ? "password" : "text"}
+                  autoComplete="current-password"
+                  required
+                  maxLength={30}
+                  className={`appearance-none block w-full pl-8 xs:pl-10 pr-8 xs:pr-10 py-2 border rounded-md text-xs xs:text-sm ${
+                    isLight
+                      ? 'border-gray-300 placeholder-gray-400 text-gray-900 focus:ring-primary-light focus:border-primary-light bg-white'
+                      : 'border-gray-700 placeholder-gray-500 text-white focus:ring-primary-dark focus:border-primary-dark bg-gray-800'
+                  } focus:outline-none focus:ring-2`}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <div className="absolute inset-y-0 right-0 pr-2 xs:pr-3 flex items-center">
+                  {eyeOpen ? (
+                    <IoMdEye
+                      className={`h-4 w-4 xs:h-5 xs:w-5 cursor-pointer ${
+                        isLight ? 'text-gray-500 hover:text-gray-700' : 'text-gray-400 hover:text-gray-200'
+                      }`}
+                      onClick={handleEye}
+                    />
+                  ) : (
+                    <IoMdEyeOff
+                      className={`h-4 w-4 xs:h-5 xs:w-5 cursor-pointer ${
+                        isLight ? 'text-gray-500 hover:text-gray-700' : 'text-gray-400 hover:text-gray-200'
+                      }`}
+                      onClick={handleEye}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between space-y-3 xs:space-y-0">
+            <div className="flex items-center">
               <input
-                type={ eyeOpen ? "password" : "text" }
-                required
-                className="mt-3 appearance-none rounded-none relative block w-full px-3 py-2 border z-0 border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm valid:ring-1 valid:ring-lime-500"
-                placeholder="Password"
-                maxLength={30}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                id="remember-me"
+                name="remember-me"
+                type="checkbox"
+                className={`h-3 w-3 xs:h-4 xs:w-4 rounded ${
+                  isLight
+                    ? 'text-primary-light focus:ring-primary-light border-gray-300'
+                    : 'text-primary-dark focus:ring-primary-dark border-gray-700 bg-gray-800'
+                }`}
               />
-              {
-                eyeOpen ? ( <IoMdEye className="absolute cursor-pointer text-[1.65rem] ml-3 mt-[18px] mr-3 z-10" onClick={handleEye}/> )
-                :
-                ( <IoMdEyeOff className="absolute cursor-pointer text-[1.65rem] mt-[18px] mr-3 z-10" onClick={handleEye}/> )
-              }
+              <label htmlFor="remember-me" className={`ml-2 block text-xs xs:text-sm ${
+                isLight ? 'text-gray-700' : 'text-gray-300'
+              }`}>
+                Remember me
+              </label>
+            </div>
+
+            <div className="text-xs xs:text-sm">
+              <a href="#" className={`font-medium ${
+                isLight ? 'text-primary-light hover:text-blue-600' : 'text-primary-dark hover:text-emerald-400'
+              }`}>
+                Forgot password?
+              </a>
             </div>
           </div>
 
           <div>
-            <button
+            <motion.button
               type="submit"
-              className="group select-none relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 active:scale-90 transition ease-out"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-xs xs:text-sm font-medium rounded-md text-white ${
+                isLight
+                  ? 'bg-primary-light hover:bg-blue-600'
+                  : 'bg-primary-dark hover:bg-emerald-600'
+              } focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                isLight ? 'focus:ring-primary-light' : 'focus:ring-primary-dark'
+              } transition-colors duration-200`}
             >
               Sign in
-            </button>
+            </motion.button>
           </div>
-        </form>
-        <div className="flex items-center justify-center mt-6">
-          <a
-            href={`/api/auth/google`} // or your Google handler route
-            className={`flex items-center gap-2 px-4 py-2 border-[3px] rounded-md text-sm font-medium transition duration-150
-              ${isLight ? 'border-gray-400 hover:bg-gray-100' : 'border-white hover:bg-zinc-700' }
-              `}
-          >
-            <img
-              src="https://cdn-icons-png.flaticon.com/512/300/300221.png"
-              width={30}
-              alt=""
-            />
-            <span className={`text-[15px] font-medium ${isLight ? 'text-black' : 'text-zinc-300' }`}>
-              Continue with Google
-            </span>
-          </a>
-        </div>
+        </motion.form>
+
+        {/* Social Login */}
+        <motion.div
+          className="mt-5 xs:mt-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+        >
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className={`w-full border-t ${
+                isLight ? 'border-gray-300' : 'border-gray-700'
+              }`}></div>
+            </div>
+            <div className="relative flex justify-center text-xs xs:text-sm">
+              <span className={`px-2 ${
+                isLight ? 'bg-gray-50 text-gray-500' : 'bg-gray-900 text-gray-400'
+              }`}>
+                Or continue with
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-4 xs:mt-6 flex justify-center">
+            <a
+              href={`/api/auth/google`}
+              className={`flex items-center justify-center gap-2 px-3 xs:px-4 py-1.5 xs:py-2 border rounded-md text-xs xs:text-sm font-medium transition-colors duration-200 ${
+                isLight
+                  ? 'border-gray-300 hover:bg-gray-100 text-gray-700'
+                  : 'border-gray-700 hover:bg-gray-800 text-gray-200'
+              }`}
+            >
+              <img
+                src="https://cdn-icons-png.flaticon.com/512/300/300221.png"
+                className="h-4 w-4 xs:h-5 xs:w-5"
+                alt="Google logo"
+              />
+              <span>Google</span>
+            </a>
+          </div>
+        </motion.div>
       </div>
     </motion.div>
   );

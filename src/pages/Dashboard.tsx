@@ -1,12 +1,12 @@
 import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import { Upload, FileText, AlertCircle } from "lucide-react";
+import { Upload, FileText, AlertCircle, CheckCircle, XCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../context/ThemeContext";
 
-// At top of your file
+// Resume score interface
 interface ResumeScore {
   atsScore: number;
   suggestions: string[];
@@ -17,9 +17,21 @@ interface ResumeScore {
   jobRole: string[];
 }
 
+// Animation variants
 const pageVariants = {
   initial: { opacity: 0, y: -20 },
   animate: { opacity: 1, y: 0 },
+};
+
+const dropzoneVariants = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0, transition: { delay: 0.2 } },
+  hover: { scale: 1.02, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)" },
+};
+
+const resultVariants = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1, transition: { duration: 0.5 } },
 };
 
 const Dashboard = () => {
@@ -120,228 +132,354 @@ const Dashboard = () => {
   };
 
   return (
-
     <motion.div
-    className={`${isLight ? 'bg-gray-100' : 'bg-gray-900 text-white'} min-h-[calc(100vh-4.1rem)]`}
-    variants={pageVariants}
+      className={`${isLight ? 'bg-gray-50' : 'bg-gray-900 text-white'} min-h-[calc(100vh-4.1rem)]`}
+      variants={pageVariants}
       initial="initial"
       animate="animate"
       transition={{ duration: 0.5 }}
     >
-      <div className="relative">
-      {/* Background blur animation */}
-      <motion.div
-        initial={{ x: "-50%", y: "-50%", opacity: 0.5 }}
-        animate={{ x: "180%", y: "160px", opacity: 0 }}
-        transition={{ duration: 3,}}
-        className="absolute w-[500px] h-[500px] bg-green-400 rounded-full filter blur-3xl opacity-30 z-0"
-        style={{ top: "-10%", left: "-10%" }}
-      />
-      <div className="max-w-6xl mx-auto px-4 py-8 z-1111">
-      <h1 className="text-4xl text-center font-semibold">Upload Your Resume</h1>
-      <div className="mt-10 ">
-        <div>
-          <motion.div
-          whileHover={{ scale : 1.1 }}
-          transition={{ duration : 0.2 }}
+      <div className="relative overflow-hidden">
+        {/* Background decoration */}
+        <motion.div
+          initial={{ x: "-50%", y: "-50%", opacity: 0.3 }}
+          animate={{ x: "150%", y: "100px", opacity: 0 }}
+          transition={{ duration: 5, ease: "easeInOut" }}
+          className="absolute w-[200px] xs:w-[300px] sm:w-[500px] h-[200px] xs:h-[300px] sm:h-[500px] bg-gradient-to-r from-blue-400 to-green-400 dark:from-blue-600 dark:to-green-600 rounded-full filter blur-3xl opacity-20 z-0"
+          style={{ top: "-10%", left: "-10%" }}
+        />
 
-            {...getRootProps()}
-            className={`mb-10 border-2 border-dashed rounded-lg p-10 text-center select-none cursor-pointer ${
-              isDragActive ? "border-blue-500 bg-blue-50" : "border-gray-300"
-            }`}
+        <div className="max-w-6xl mx-auto px-3 xs:px-4 py-6 xs:py-8 md:py-12 relative z-10">
+          <motion.h1
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-xl xs:text-2xl sm:text-3xl md:text-4xl text-center font-bold mb-4 xs:mb-6 md:mb-8"
           >
-            <input {...getInputProps()} />
-            <Upload className="mx-auto h-12 w-12 text-gray-400 " />
-            <p className="mt-4 text-lg text-gray-600">
-              Drag & drop your resume here, or click to select
-            </p>
-            <p className="mt-2 text-sm text-gray-500  p-3">
-              Supported formats: PDF, DOC, DOCX
-            </p>
-          </motion.div>
+            Upload Your Resume
+          </motion.h1>
 
-          {file && (
-            <div className={`text-xl mt-4 p-4 rounded-lg shadow
-            ${ isLight ? 'bg-white' : 'bg-zinc-600' }
-            `}>
-              <div className="flex items-center">
-                <FileText className="h-7 w-7 text-blue-500 mr-2" />
-                <span className={`
-                  ${isLight ? 'text-gray-700' : 'text-white' }
-                  `}>{file.name}</span>
-              </div>
+          <div className="mt-4 xs:mt-6 md:mt-10">
+            <div
+              {...getRootProps()}
+              className={`mb-4 xs:mb-6 md:mb-10 border-2 border-dashed rounded-lg p-4 xs:p-6 md:p-10 text-center select-none cursor-pointer transition-all duration-200 ${
+                isDragActive
+                  ? isLight
+                    ? "border-primary-light bg-blue-50"
+                    : "border-primary-dark bg-gray-800"
+                  : isLight
+                    ? "border-gray-300 hover:border-primary-light"
+                    : "border-gray-700 hover:border-primary-dark"
+              }`}
+            >
+              <input {...getInputProps()} />
+              <Upload className={`mx-auto h-8 w-8 xs:h-10 xs:w-10 md:h-12 md:w-12 ${
+                isLight ? "text-primary-light" : "text-primary-dark"
+              }`} />
+              <p className={`mt-3 xs:mt-4 text-sm xs:text-base md:text-lg font-medium ${
+                isLight ? "text-gray-700" : "text-gray-200"
+              }`}>
+                Drag & drop your resume here, or click to select
+              </p>
+              <p className={`mt-1 xs:mt-2 text-xs xs:text-sm ${
+                isLight ? "text-gray-500" : "text-gray-400"
+              }`}>
+                Supported formats: PDF, DOC, DOCX
+              </p>
             </div>
+
+            {/* File preview */}
+            {file && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`text-sm xs:text-base md:text-lg mt-3 xs:mt-4 p-3 xs:p-4 rounded-lg shadow-md ${
+                  isLight ? 'bg-white' : 'bg-gray-800'
+                }`}
+              >
+                <div className="flex items-center">
+                  <FileText className={`h-5 w-5 xs:h-6 xs:w-6 md:h-7 md:w-7 ${
+                    isLight ? "text-primary-light" : "text-primary-dark"
+                  } mr-1.5 xs:mr-2`} />
+                  <span className={`truncate text-sm xs:text-base ${
+                    isLight ? 'text-gray-700' : 'text-white'
+                  }`}>
+                    {file.name}
+                  </span>
+                </div>
+              </motion.div>
+            )}
+          </div>
+
+          {/* Loading state */}
+          {analyzing && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className={`mt-4 xs:mt-6 md:mt-8 p-3 xs:p-4 md:p-6 rounded-lg shadow-md animate-pulse space-y-3 xs:space-y-4 md:space-y-6 ${
+                isLight ? "bg-white" : "bg-gray-800"
+              }`}
+            >
+              <div>
+                <div className={`h-4 xs:h-5 md:h-6 ${isLight ? "bg-gray-200" : "bg-gray-700"} rounded w-1/4 mb-1 xs:mb-2`} />
+                <div className={`h-2 xs:h-2.5 md:h-3 ${isLight ? "bg-gray-100" : "bg-gray-600"} rounded w-full`} />
+              </div>
+
+              <div>
+                <div className={`h-3 xs:h-4 md:h-5 ${isLight ? "bg-gray-200" : "bg-gray-700"} rounded w-1/3 mb-1 xs:mb-2`} />
+                <div className="space-y-1 xs:space-y-1.5 md:space-y-2">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className={`h-2 xs:h-3 md:h-4 ${isLight ? "bg-gray-100" : "bg-gray-600"} rounded w-full`} />
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className={`h-3 xs:h-4 md:h-5 ${isLight ? "bg-gray-200" : "bg-gray-700"} rounded w-1/3 mb-1 xs:mb-2`} />
+                <div className="space-y-1 xs:space-y-1.5 md:space-y-2">
+                  {[...Array(2)].map((_, i) => (
+                    <div key={i} className={`h-2 xs:h-3 md:h-4 ${isLight ? "bg-gray-100" : "bg-gray-600"} rounded w-3/4`} />
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className={`h-3 xs:h-4 md:h-5 ${isLight ? "bg-gray-200" : "bg-gray-700"} rounded w-1/4 mb-1 xs:mb-2`} />
+                <div className="flex gap-1 xs:gap-1.5 md:gap-2 flex-wrap">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className={`h-4 xs:h-5 md:h-6 w-10 xs:w-12 md:w-16 ${isLight ? "bg-gray-100" : "bg-gray-600"} rounded-full`} />
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <div className={`h-6 xs:h-8 md:h-10 w-20 xs:w-24 md:w-32 ${isLight ? "bg-gray-200" : "bg-gray-700"} rounded-lg`} />
+              </div>
+            </motion.div>
+          )}
+
+          {/* Results */}
+          {!analyzing && score && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              className={`mt-4 xs:mt-6 md:mt-8 p-3 xs:p-4 md:p-6 rounded-lg shadow-md ${
+                isLight ? 'bg-white' : 'bg-gray-800'
+              }`}
+            >
+              <h2 className={`text-lg xs:text-xl md:text-2xl font-bold mb-3 xs:mb-4 md:mb-6 ${
+                isLight ? 'text-gray-800' : 'text-white'
+              }`}>
+                Analysis Results
+              </h2>
+
+              {/* ATS Score */}
+              <div className="mb-4 xs:mb-6 md:mb-8">
+                <div className="flex items-center justify-between mb-1 xs:mb-2">
+                  <span className={`text-sm xs:text-base font-semibold ${
+                    isLight ? 'text-gray-700' : 'text-gray-200'
+                  }`}>
+                    ATS Score
+                  </span>
+                  <span className={`text-lg xs:text-xl md:text-2xl font-bold ${
+                    isLight ? 'text-primary-light' : 'text-primary-dark'
+                  }`}>
+                    {score.atsScore}%
+                  </span>
+                </div>
+                <div className={`w-full ${isLight ? "bg-gray-200" : "bg-gray-700"} rounded-full h-1.5 xs:h-2 md:h-2.5`}>
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${score.atsScore}%` }}
+                    transition={{ duration: 1, delay: 0.3 }}
+                    className={`h-1.5 xs:h-2 md:h-2.5 rounded-full ${
+                      isLight
+                        ? "bg-sunset-glow"
+                        : "bg-dark-sunset-glow"
+                    } bg-400 animate-bg-move`}
+                  />
+                </div>
+              </div>
+
+              {/* Tabs for different sections */}
+              <div className="mb-3 xs:mb-4 md:mb-6">
+                <div className="flex flex-wrap border-b border-gray-200 dark:border-gray-700">
+                  <button
+                    onClick={() => {
+                      const element = document.getElementById('suggestions');
+                      element?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className={`mr-1 xs:mr-2 py-1.5 xs:py-2 px-2 xs:px-3 md:px-4 text-xs xs:text-sm md:text-base font-medium rounded-t-lg ${
+                      isLight
+                        ? "text-primary-light hover:bg-gray-50"
+                        : "text-primary-dark hover:bg-gray-700"
+                    }`}
+                  >
+                    Suggestions
+                  </button>
+                  <button
+                    onClick={() => {
+                      const element = document.getElementById('strengths');
+                      element?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className={`mr-1 xs:mr-2 py-1.5 xs:py-2 px-2 xs:px-3 md:px-4 text-xs xs:text-sm md:text-base font-medium rounded-t-lg ${
+                      isLight
+                        ? "text-primary-light hover:bg-gray-50"
+                        : "text-primary-dark hover:bg-gray-700"
+                    }`}
+                  >
+                    Strengths
+                  </button>
+                  <button
+                    onClick={() => {
+                      const element = document.getElementById('keywords');
+                      element?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className={`py-1.5 xs:py-2 px-2 xs:px-3 md:px-4 text-xs xs:text-sm md:text-base font-medium rounded-t-lg ${
+                      isLight
+                        ? "text-primary-light hover:bg-gray-50"
+                        : "text-primary-dark hover:bg-gray-700"
+                    }`}
+                  >
+                    Keywords
+                  </button>
+                </div>
+              </div>
+
+              {/* Suggestions Section */}
+              <div id="suggestions" className="mb-4 xs:mb-6 md:mb-8 scroll-mt-16 xs:scroll-mt-20">
+                <h3 className={`text-base xs:text-lg md:text-xl font-semibold mb-2 xs:mb-3 ${
+                  isLight ? 'text-gray-800' : 'text-white'
+                }`}>
+                  Suggestions
+                </h3>
+                <ul className="space-y-2 xs:space-y-3">
+                  {score.suggestions.map((suggestion, index) => (
+                    <li key={index} className="flex items-start">
+                      <AlertCircle className={`h-4 w-4 xs:h-5 xs:w-5 ${
+                        isLight ? "text-amber-500" : "text-amber-400"
+                      } mr-1.5 xs:mr-2 flex-shrink-0 mt-0.5`} />
+                      <span className={`text-xs xs:text-sm md:text-base ${
+                        isLight ? 'text-gray-700' : 'text-gray-200'
+                      }`}>
+                        {suggestion}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Strengths Section */}
+              <div id="strengths" className="mb-4 xs:mb-6 md:mb-8 scroll-mt-16 xs:scroll-mt-20">
+                <h3 className={`text-base xs:text-lg md:text-xl font-semibold mb-2 xs:mb-3 ${
+                  isLight ? 'text-gray-800' : 'text-white'
+                }`}>
+                  Strengths
+                </h3>
+                <ul className="space-y-2 xs:space-y-3">
+                  {score.strengths.map((strength, index) => (
+                    <li key={index} className="flex items-start">
+                      <CheckCircle className={`h-4 w-4 xs:h-5 xs:w-5 ${
+                        isLight ? "text-green-500" : "text-green-400"
+                      } mr-1.5 xs:mr-2 flex-shrink-0 mt-0.5`} />
+                      <span className={`text-xs xs:text-sm md:text-base ${
+                        isLight ? 'text-gray-700' : 'text-gray-200'
+                      }`}>
+                        {strength}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Specific Suggestions */}
+              <div className="mb-4 xs:mb-6 md:mb-8 scroll-mt-16 xs:scroll-mt-20">
+                <h3 className={`text-base xs:text-lg md:text-xl font-semibold mb-2 xs:mb-3 ${
+                  isLight ? 'text-gray-800' : 'text-white'
+                }`}>
+                  Specific Suggestions
+                </h3>
+                <ul className="space-y-2 xs:space-y-3">
+                  {score.specificSuggestions.map((suggestion, index) => (
+                    <li key={index} className="flex items-start">
+                      <AlertCircle className={`h-4 w-4 xs:h-5 xs:w-5 ${
+                        isLight ? "text-blue-500" : "text-blue-400"
+                      } mr-1.5 xs:mr-2 flex-shrink-0 mt-0.5`} />
+                      <span className={`text-xs xs:text-sm md:text-base ${
+                        isLight ? 'text-gray-700' : 'text-gray-200'
+                      }`}>
+                        {suggestion}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Job Roles */}
+              <div className="mb-4 xs:mb-6 md:mb-8 scroll-mt-16 xs:scroll-mt-20">
+                <h3 className={`text-base xs:text-lg md:text-xl font-semibold mb-2 xs:mb-3 ${
+                  isLight ? 'text-gray-800' : 'text-white'
+                }`}>
+                  Suitable Job Roles
+                </h3>
+                <ul className="space-y-2 xs:space-y-3">
+                  {score.jobRole.map((role, index) => (
+                    <li key={index} className="flex items-start">
+                      <FileText className={`h-4 w-4 xs:h-5 xs:w-5 ${
+                        isLight ? "text-purple-500" : "text-purple-400"
+                      } mr-1.5 xs:mr-2 flex-shrink-0 mt-0.5`} />
+                      <span className={`text-xs xs:text-sm md:text-base ${
+                        isLight ? 'text-gray-700' : 'text-gray-200'
+                      }`}>
+                        {role}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Keywords */}
+              <div id="keywords" className="mb-4 xs:mb-6 md:mb-8 scroll-mt-16 xs:scroll-mt-20">
+                <h3 className={`text-base xs:text-lg md:text-xl font-semibold mb-2 xs:mb-3 ${
+                  isLight ? 'text-gray-800' : 'text-white'
+                }`}>
+                  Keywords
+                </h3>
+                <div className="flex flex-wrap gap-1 xs:gap-1.5 md:gap-2">
+                  {score.keywords.map((keyword, index) => (
+                    <span
+                      key={index}
+                      className={`px-2 xs:px-3 py-0.5 xs:py-1 text-xs xs:text-sm rounded-full ${
+                        isLight
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-blue-900 text-blue-100"
+                      }`}
+                    >
+                      {keyword}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Button */}
+              <div className="mt-4 xs:mt-6 md:mt-8 flex justify-end">
+                <button
+                  onClick={handleEditResume}
+                  className={`px-3 xs:px-4 py-1.5 xs:py-2 md:px-6 md:py-3 rounded-lg text-white text-xs xs:text-sm font-medium transition-colors ${
+                    isLight
+                      ? "bg-primary-light hover:bg-blue-600"
+                      : "bg-primary-dark hover:bg-emerald-600"
+                  }`}
+                  disabled={!file}
+                >
+                  Edit Resume
+                </button>
+              </div>
+            </motion.div>
           )}
         </div>
-
-        {analyzing ? (
-          <div className="mt-10 bg-white p-6 rounded-lg shadow animate-pulse space-y-6">
-            <div>
-              <div className="h-6 bg-gray-300 rounded w-1/4 mb-2" />
-              <div className="h-3 bg-gray-200 rounded w-full" />
-            </div>
-
-            <div>
-              <div className="h-5 bg-gray-300 rounded w-1/3 mb-2" />
-              <div className="space-y-2">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="h-4 bg-gray-200 rounded w-full" />
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <div className="h-5 bg-gray-300 rounded w-1/3 mb-2" />
-              <div className="space-y-2">
-                {[...Array(2)].map((_, i) => (
-                  <div key={i} className="h-4 bg-gray-200 rounded w-3/4" />
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <div className="h-5 bg-gray-300 rounded w-1/3 mb-2" />
-              <div className="space-y-2">
-                {[...Array(2)].map((_, i) => (
-                  <div key={i} className="h-4 bg-gray-200 rounded w-2/3" />
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <div className="h-5 bg-gray-300 rounded w-1/4 mb-2" />
-              <div className="flex gap-2 flex-wrap">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="h-6 w-16 bg-gray-200 rounded-full" />
-                ))}
-              </div>
-            </div>
-
-            <div className="flex justify-end">
-              <div className="h-10 w-32 bg-gray-300 rounded-lg" />
-            </div>
-          </div>
-        ) : score ? (
-          <motion.div className={`mt-10 p-6 rounded-lg shadow
-            ${ isLight ? 'bg-white text-gray-600' : 'bg-zinc-600' }
-            `}
-          initial={{ opacity : 0 }}
-          animate= {{ opacity : 1 }}
-          transition={{ delay : 0.5 , ease : 'easeOut'}}
-          >
-            <h2 className="text-2xl font-bold mb-4">Analysis Results</h2>
-
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className={`font-semibold
-                  ${isLight ? 'text-gray-600' : 'text-white' }
-                  `}>ATS Score</span>
-                <span className={`text-2xl font-bold
-                  ${isLight ? 'text-blue-600' : 'text-green-500' }
-                  `}>
-                  {score.atsScore}%
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2.5">
-                <motion.div
-                initial = {{
-                  width :  0
-                }}
-                animate = {{
-                  width : `${score.atsScore}%`
-                }}
-                transition={{
-                  duration : 1 ,
-                  delay : 0.8,
-                  ease :"easeOut"
-                }}
-                  className="bg-sunset-glow bg-400 animate-bg-move h-2.5 rounded-full"
-                  style={{ width: `${score.atsScore}%` }}
-                ></motion.div>
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-2">Suggestions</h3>
-              <ul className="space-y-2">
-                {score.suggestions.map((suggestion, index) => (
-                  <li key={index} className="flex items-start">
-                    <AlertCircle className="h-5 w-5 text-yellow-500 mr-2 flex-shrink-0 mt-0.5" />
-                    <span className={`text-gray-700
-                      ${isLight ? 'text-gray-600' : 'text-white' }
-                      `}>{suggestion}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-2">Strengths</h3>
-              <ul className="space-y-2">
-                {score.strengths.map((strengths, index) => (
-                  <li key={index} className="flex items-start">
-                    <AlertCircle className="h-5 w-5 text-yellow-500 mr-2 flex-shrink-0 mt-0.5" />
-                    <span className={`
-                      ${isLight ? 'text-gray-600' : 'text-white' }
-                      `}>{strengths}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-2">
-                SpecificSuggestions
-              </h3>
-              <ul className="space-y-2">
-                {score.specificSuggestions.map((specificSuggestions, index) => (
-                  <li key={index} className="flex items-start">
-                    <AlertCircle className="h-5 w-5 text-yellow-500 mr-2 flex-shrink-0 mt-0.5" />
-                    <span className={`
-                      ${isLight ? 'text-gray-600' : 'text-white' }
-                      `}>{specificSuggestions}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-2">JobRole</h3>
-              <ul className="space-y-2">
-                {score.jobRole.map((jobRole, index) => (
-                  <li key={index} className="flex items-start">
-                    <AlertCircle className="h-5 w-5 text-yellow-500 mr-2 flex-shrink-0 mt-0.5" />
-                    <span className={`
-                      ${isLight ? 'text-gray-600' : 'text-white' }
-                      `}>{jobRole}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Keywords Suggest</h3>
-              <div className="flex flex-wrap gap-2">
-                {score.keywords.map((keyword, index) => (
-                  <span
-                    key={index}
-                    className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
-                  >
-                    {keyword}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <div className="mt-6 text-right">
-              <button
-                onClick={() => handleEditResume()}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg"
-              >
-                Edit Resume
-              </button>
-            </div>
-          </motion.div>
-        ) : null}
       </div>
-    </div>
-    </div>
     </motion.div>
   );
 };
