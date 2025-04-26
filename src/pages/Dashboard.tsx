@@ -24,7 +24,7 @@ const pageVariants = {
 
 const Dashboard = () => {
   // Use empty string to use the proxy configured in vite.config.ts
-  const serverUrl = '';
+  const serverUrl = import.meta.env.VITE_SERVER_URL || "";
 
   const { isLight } = useTheme();
   const [file, setFile] = useState<File | null>(null);
