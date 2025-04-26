@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { LogIn } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
-import.meta.env.VITE_BACKEND_URL
 import { IoMdEyeOff } from "react-icons/io";
 import { IoMdEye } from "react-icons/io";
 import { useTheme } from "../context/ThemeContext";
@@ -16,7 +15,7 @@ const pageVariants = {
 
 const Login = () => {
   // Use the proxy configured in vite.config.ts instead of the direct server URL
-  const serverUrl = '';
+  const serverUrl = import.meta.env.VITE_SERVER_URL || '';
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
