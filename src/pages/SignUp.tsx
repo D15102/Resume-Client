@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserPlus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTheme } from '../context/ThemeContext';
 import {motion} from 'framer-motion'
+import emailjs from '@emailjs/browser'
 
 const pageVariants = {
   initial: { opacity: 0, y: 20 },
@@ -18,7 +19,7 @@ const SignUp = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-
+  const form = useRef();
   const {isLight} = useTheme()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,6 +51,16 @@ const SignUp = () => {
 
       if (response.ok) {
         toast.success('Account created successfully!');
+        emailjs.send("service_zs8dfds","template_ixw0fad",{
+          name : name,
+          email : email
+        },"C9rw1HuEBWiPQBXxZ")
+        .then(
+          ()=> toast.success("Email Sent Successfully !")
+        )
+        .catch(
+          ()=> toast.error("Error Sending Email !")
+        )
         navigate('/login');
       } else {
         toast.error(data.message || 'Signup failed');
@@ -99,7 +110,7 @@ const SignUp = () => {
             </a>
           </p>
         </div>
-        <form className="mt-6 xs:mt-8 space-y-5 xs:space-y-6" onSubmit={handleSubmit}>
+        <form className="mt-6 xs:mt-8 space-y-5 xs:space-y-6" onSubmit={handleSubmit} ref={form}>
           <div className="rounded-md shadow-sm space-y-3 xs:space-y-4">
             <div>
               <label htmlFor="name" className={`block text-xs xs:text-sm font-medium mb-1 ${
@@ -110,6 +121,7 @@ const SignUp = () => {
               <input
                 id="name"
                 type="text"
+                name='name'
                 required
                 className={`appearance-none block w-full px-3 py-2 border rounded-md text-xs xs:text-sm ${
                   isLight
@@ -130,6 +142,7 @@ const SignUp = () => {
               <input
                 id="email"
                 type="email"
+                name='email'
                 required
                 className={`appearance-none block w-full px-3 py-2 border rounded-md text-xs xs:text-sm ${
                   isLight
