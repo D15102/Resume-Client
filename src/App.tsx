@@ -11,6 +11,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import EditResume from './pages/EditResume.tsx'
 import ProtectedRoute from './pages/ProtectedRoute.tsx';
 import EditResumePage from './pages/EditResumePage.tsx';
+import AuthCallback from './pages/AuthCallback.tsx';
 import { AnimatePresence } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
 
@@ -22,7 +23,9 @@ function AppRoutes() {
 
   return (
     <>
-      <Navbar />
+      {/* Don't show Navbar on auth-callback page */}
+      {location.pathname !== '/auth-callback' && <Navbar />}
+
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
           <Route path="/" element={<Home />} />
@@ -40,6 +43,7 @@ function AppRoutes() {
               <EditResumePage />
             </ProtectedRoute>
           } />
+          <Route path="/auth-callback" element={<AuthCallback />} />
         </Routes>
       </AnimatePresence>
       <Toaster
