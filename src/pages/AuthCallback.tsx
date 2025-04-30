@@ -27,7 +27,8 @@ const AuthCallback = () => {
         // Try to get token from multiple sources
         let token: string | null = null;
 
-        // Debug: Log all cookies
+        // Debug: Log all cookies and URL
+        console.log('Current URL:', window.location.href);
         console.log('All cookies:', document.cookie);
 
         // 1. Try to get from cookies first (more reliable)
@@ -68,6 +69,18 @@ const AuthCallback = () => {
                 console.error('Error decoding token from URL:', e);
               }
             }
+          }
+        }
+
+        // 3. If still no token, try localStorage as a last resort
+        // (in case it was stored there in a previous attempt)
+        if (!token) {
+          const storedToken = localStorage.getItem('temp_auth_token');
+          if (storedToken) {
+            console.log('Found token in localStorage');
+            token = storedToken;
+            // Clear it from localStorage after retrieving
+            localStorage.removeItem('temp_auth_token');
           }
         }
 
@@ -125,11 +138,17 @@ const AuthCallback = () => {
             // Now that we've successfully processed the token, clear the cookie
             document.cookie = 'temp_auth_token=; Max-Age=-99999999; path=/;';
 
+            // Also store the token in localStorage as a backup for future attempts
+            // This helps in case the user refreshes the page during authentication
+            localStorage.setItem('temp_auth_token', token);
+
             // Show success toast only once
             toast.success('Successfully logged in with Google!', { id: 'google-login-success' });
 
             // Navigate to dashboard with a slight delay to ensure state updates
             setTimeout(() => {
+              // Clear the backup token after successful navigation
+              localStorage.removeItem('temp_auth_token');
               navigate('/dashboard');
             }, 100);
           } catch (error: any) {
