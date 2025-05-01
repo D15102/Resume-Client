@@ -6,6 +6,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
+import emailjs from '@emailjs/browser';
 
 // Resume score interface
 interface ResumeScore {
@@ -29,37 +30,162 @@ const Dashboard = () => {
   const serverUrl = import.meta.env.VITE_SERVER_URL || "";
 
   const { isLight } = useTheme();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth() as {
+    isAuthenticated: boolean;
+    user: { name?: string; email?: string; profilePicture?: string } | null
+  };
   const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [score, setScore] = useState<ResumeScore | null>(null);
+  const [emailSent, setEmailSent] = useState(false);
+
+  // Function to send welcome email
+  const sendWelcomeEmail = async (name: string, email: string) => {
+    if (emailSent) return; // Prevent multiple emails
+
+    try {
+      console.log('Dashboard: Sending welcome email to:', email);
+
+      // Initialize EmailJS
+      emailjs.init("C9rw1HuEBWiPQBXxZ");
+
+      // Send welcome email
+      await emailjs.send(
+        "service_zs8dfds", // Your EmailJS service ID
+        "template_ixw0fad", // Your EmailJS template ID
+        {
+          name: name,
+          email: email
+        }
+      );
+
+      console.log('Dashboard: Welcome email sent successfully');
+      setEmailSent(true);
+      toast.success('Welcome email sent!', {
+        id: 'dashboard-email-success',
+        duration: 5000
+      });
+    } catch (error) {
+      console.error('Dashboard: Error sending welcome email:', error);
+      toast.error('Could not send welcome email. Please try again later.', {
+        id: 'dashboard-email-error'
+      });
+    }
+  };
 
   // Check for auth_success flag in sessionStorage (set by AuthCallback)
   useEffect(() => {
+    console.log('Dashboard: Checking authentication flags');
     const authSuccess = sessionStorage.getItem('auth_success');
     const isFirstLogin = sessionStorage.getItem('is_first_login');
+
+    console.log('Dashboard: Auth success flag =', authSuccess);
+    console.log('Dashboard: Is first login flag =', isFirstLogin);
 
     if (authSuccess === 'true') {
       // Clear the flag
       sessionStorage.removeItem('auth_success');
+      console.log('Dashboard: Cleared auth_success flag');
 
       // Show different welcome message based on first login status
       if (isFirstLogin === 'true') {
         // Clear the first login flag
         sessionStorage.removeItem('is_first_login');
+        console.log('Dashboard: Cleared is_first_login flag');
 
         // Show special welcome message for first-time users
-        toast.success('Welcome to SkillSync! We\'ve sent you a welcome email.', {
+        toast.success('Welcome to SkillSync! We\'re sending you a welcome email.', {
           id: 'first-login-welcome',
           duration: 6000
         });
+        console.log('Dashboard: Showed first-time user welcome message');
+
+        // Try to send welcome email if we have user data
+        if (user && user.name && user.email) {
+          sendWelcomeEmail(user.name, user.email);
+        } else {
+          // Try to get user data from localStorage
+          const storedUser = localStorage.getItem('user');
+          if (storedUser) {
+            try {
+              const userData = JSON.parse(storedUser);
+              if (userData.name && userData.email) {
+                sendWelcomeEmail(userData.name, userData.email);
+              }
+            } catch (e) {
+              console.error('Dashboard: Error parsing user data for email:', e);
+            }
+          }
+        }
       } else {
         // Show regular welcome message for returning users
         toast.success('Welcome back to your dashboard!', {
           id: 'dashboard-welcome',
           duration: 3000
         });
+        console.log('Dashboard: Showed returning user welcome message');
+      }
+    } else {
+      // Check localStorage as a fallback
+      const storedUser = localStorage.getItem('user');
+      const storedToken = localStorage.getItem('token');
+
+      if (storedUser && storedToken) {
+        try {
+          const userData = JSON.parse(storedUser);
+          console.log('Dashboard: User data from localStorage:', userData);
+
+          // Try to decode the JWT token to check for isFirstLogin
+          try {
+            const parts = storedToken.split('.');
+            if (parts.length === 3) {
+              const base64Url = parts[1];
+              const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+
+              // Add padding if needed
+              const padding = '='.repeat((4 - base64.length % 4) % 4);
+              const paddedBase64 = base64 + padding;
+
+              // Decode base64
+              const rawPayload = atob(paddedBase64);
+
+              // Convert to JSON string
+              const jsonPayload = decodeURIComponent(
+                Array.from(rawPayload)
+                  .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                  .join('')
+              );
+
+              // Parse the JWT payload
+              const payload = JSON.parse(jsonPayload);
+              console.log('Dashboard: Token payload:', payload);
+
+              // Check for isFirstLogin flag
+              if (payload.isFirstLogin === true) {
+                console.log('Dashboard: First login detected from token payload');
+
+                // Show special welcome message for first-time users
+                toast.success('Welcome to SkillSync! We\'re sending you a welcome email.', {
+                  id: 'first-login-welcome-from-token',
+                  duration: 6000
+                });
+
+                // Set the flag in sessionStorage for future reference
+                sessionStorage.setItem('is_first_login', 'true');
+
+                // Try to send welcome email if we have user data
+                if (userData.name && userData.email) {
+                  sendWelcomeEmail(userData.name, userData.email);
+                }
+              }
+            }
+          } catch (tokenError) {
+            console.error('Dashboard: Error decoding token:', tokenError);
+          }
+        } catch (e) {
+          console.error('Dashboard: Error parsing user data:', e);
+        }
       }
     }
 

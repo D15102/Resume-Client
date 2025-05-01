@@ -152,6 +152,7 @@ const AuthCallback = () => {
             const { name, email, profilePicture, isFirstLogin } = payload;
 
             console.log('User info from token:', { name, email, profilePicture, isFirstLogin });
+            console.log('Is first login?', isFirstLogin === true ? 'YES' : 'NO');
 
             if (!name || !email) {
               throw new Error('Token missing required user information');
@@ -161,6 +162,9 @@ const AuthCallback = () => {
             if (isFirstLogin) {
               console.log('First time login detected, sending welcome email');
               try {
+                // Initialize EmailJS
+                emailjs.init("C9rw1HuEBWiPQBXxZ");
+
                 // Send welcome email using EmailJS
                 await emailjs.send(
                   "service_zs8dfds", // Your EmailJS service ID
@@ -168,8 +172,7 @@ const AuthCallback = () => {
                   {
                     name: name,
                     email: email
-                  },
-                  "C9rw1HuEBWiPQBXxZ" // Your EmailJS public key
+                  }
                 );
                 console.log('Welcome email sent successfully');
                 toast.success('Welcome email sent!', {
@@ -207,8 +210,14 @@ const AuthCallback = () => {
             sessionStorage.setItem('auth_success', 'true');
 
             // Set first login flag if applicable
-            if (isFirstLogin) {
+            console.log('Setting first login flag in sessionStorage:', isFirstLogin === true ? 'YES' : 'NO');
+            if (isFirstLogin === true) {
               sessionStorage.setItem('is_first_login', 'true');
+              console.log('First login flag set in sessionStorage');
+            } else {
+              // Make sure to remove any existing flag
+              sessionStorage.removeItem('is_first_login');
+              console.log('First login flag removed from sessionStorage (not first login)');
             }
 
             // In production, also store the auth state in sessionStorage
