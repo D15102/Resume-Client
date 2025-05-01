@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
@@ -14,12 +14,26 @@ import EditResumePage from './pages/EditResumePage.tsx';
 import AuthCallback from './pages/AuthCallback.tsx';
 import { AnimatePresence } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 
 // Import global styles
 import './styles/globals.css';
 
 function AppRoutes() {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  // Check for redirect flag on component mount
+  useEffect(() => {
+    const redirectToDashboard = sessionStorage.getItem('redirect_to_dashboard');
+    if (redirectToDashboard === 'true') {
+      console.log('Found redirect flag, navigating to dashboard');
+      // Clear the flag
+      sessionStorage.removeItem('redirect_to_dashboard');
+      // Navigate to dashboard
+      navigate('/dashboard');
+    }
+  }, [navigate]);
 
   return (
     <>

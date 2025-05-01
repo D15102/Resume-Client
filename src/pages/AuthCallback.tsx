@@ -225,8 +225,13 @@ const AuthCallback = () => {
                     }));
                   }
 
-                  // Navigate to dashboard
-                  window.location.href = '/dashboard';
+                  // Navigate to dashboard with absolute URL
+                  const baseUrl = window.location.origin;
+                  console.log('Base URL for navigation:', baseUrl);
+                  window.location.href = `${baseUrl}/dashboard`;
+
+                  // As a fallback, also try setting a redirect flag
+                  sessionStorage.setItem('redirect_to_dashboard', 'true');
                 } catch (e) {
                   console.error('Error during navigation:', e);
                   // Fallback to React Router

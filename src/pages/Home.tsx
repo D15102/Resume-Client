@@ -1,6 +1,8 @@
 import { Upload, CheckCircle, TrendingUp, FileText } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 
 const pageVariants = {
@@ -29,6 +31,24 @@ const cardVariants = {
 
 const Home = () => {
   const { isLight } = useTheme();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  // Check for authentication and redirect to dashboard if needed
+  useEffect(() => {
+    // Check for auth_success flag (coming from Google auth)
+    const authSuccess = sessionStorage.getItem('auth_success');
+    const redirectToDashboard = sessionStorage.getItem('redirect_to_dashboard');
+
+    if (isAuthenticated || authSuccess === 'true' || redirectToDashboard === 'true') {
+      console.log('User is authenticated, redirecting to dashboard');
+      // Clear flags
+      sessionStorage.removeItem('auth_success');
+      sessionStorage.removeItem('redirect_to_dashboard');
+      // Navigate to dashboard
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
 
   const features = [
     {

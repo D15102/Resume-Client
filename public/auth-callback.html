@@ -58,63 +58,63 @@
     // This script handles the token extraction and redirection
     (function() {
       const messageElement = document.getElementById('message');
-      
+
       function updateMessage(text) {
         if (messageElement) {
           messageElement.textContent = text;
         }
       }
-      
+
       function extractToken() {
         updateMessage('Extracting authentication token...');
-        
+
         try {
           // Try to get token from URL hash
           const hash = window.location.hash;
           console.log('URL hash:', hash);
-          
+
           if (hash && hash.includes('token=')) {
             updateMessage('Token found in URL hash');
-            
+
             // Get everything after token= and before any other hash parameters
             let token = hash.split('token=')[1];
             if (token && token.includes('&')) {
               token = token.split('&')[0];
             }
-            
+
             if (token) {
               try {
                 // Decode the token
                 token = decodeURIComponent(token);
                 console.log('Token decoded successfully');
-                
+
                 // Parse the JWT to get user info
                 const parts = token.split('.');
                 if (parts.length === 3) {
                   const base64Url = parts[1];
                   const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                  
+
                   // Add padding if needed
                   const padding = '='.repeat((4 - base64.length % 4) % 4);
                   const paddedBase64 = base64 + padding;
-                  
+
                   // Decode base64
                   const rawPayload = atob(paddedBase64);
-                  
+
                   // Convert to JSON string
                   const jsonPayload = decodeURIComponent(
                     Array.from(rawPayload)
                       .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
                       .join('')
                   );
-                  
+
                   // Parse the JWT payload
                   const payload = JSON.parse(jsonPayload);
                   const { name, email, profilePicture } = payload;
-                  
+
                   if (name && email) {
                     updateMessage('User information extracted successfully');
-                    
+
                     // Store the token and user info
                     localStorage.setItem('token', token);
                     localStorage.setItem('user', JSON.stringify({
@@ -122,7 +122,7 @@
                       email,
                       profilePicture
                     }));
-                    
+
                     // Also store in sessionStorage as backup
                     sessionStorage.setItem('auth_token', token);
                     sessionStorage.setItem('auth_user', JSON.stringify({
@@ -130,17 +130,19 @@
                       email,
                       profilePicture
                     }));
-                    
+
                     // Set auth success flag
                     sessionStorage.setItem('auth_success', 'true');
-                    
+
                     updateMessage('Authentication successful! Redirecting to dashboard...');
-                    
+
                     // Redirect to dashboard
                     setTimeout(() => {
-                      window.location.href = '/dashboard';
+                      console.log('Redirecting to dashboard...');
+                      // Use absolute path to ensure correct redirection
+                      window.location.href = window.location.origin + '/dashboard';
                     }, 1000);
-                    
+
                     return;
                   }
                 }
@@ -150,10 +152,10 @@
               }
             }
           }
-          
+
           // If we get here, token extraction failed
           updateMessage('Authentication token not found or invalid');
-          
+
           // Redirect to login after a delay
           setTimeout(() => {
             window.location.href = '/login';
@@ -161,14 +163,14 @@
         } catch (error) {
           console.error('Error in auth callback:', error);
           updateMessage('Authentication process failed');
-          
+
           // Redirect to login after a delay
           setTimeout(() => {
             window.location.href = '/login';
           }, 2000);
         }
       }
-      
+
       // Start token extraction
       extractToken();
     })();
