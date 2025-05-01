@@ -174,22 +174,67 @@ const AuthCallback = () => {
             toast.success('Successfully logged in with Google!', { id: 'google-login-success' });
 
             // Navigate to dashboard with a longer delay to ensure state updates in production
-            const delay = import.meta.env.PROD ? 500 : 100;
+            const delay = import.meta.env.PROD ? 1000 : 100;
             console.log(`Using navigation delay of ${delay}ms in ${import.meta.env.PROD ? 'production' : 'development'} mode`);
 
             // Set a flag in sessionStorage to indicate successful authentication
             sessionStorage.setItem('auth_success', 'true');
 
+            // In production, also store the auth state in sessionStorage
+            // This helps with page refreshes and navigation in deployed environments
+            if (import.meta.env.PROD) {
+              // Store auth data in both localStorage and sessionStorage for redundancy
+              localStorage.setItem('token', token);
+              localStorage.setItem('user', JSON.stringify({
+                name,
+                email,
+                profilePicture
+              }));
+
+              // Also store in sessionStorage as backup
+              sessionStorage.setItem('auth_token', token);
+              sessionStorage.setItem('auth_user', JSON.stringify({
+                name,
+                email,
+                profilePicture
+              }));
+              console.log('Stored authentication data in both localStorage and sessionStorage for production environment');
+            }
+
             setTimeout(() => {
-              // Clear the backup token after successful navigation
-              localStorage.removeItem('temp_auth_token');
+              console.log('Navigation delay completed, redirecting to dashboard');
 
               // Force a hard navigation to dashboard to ensure clean state
               if (import.meta.env.PROD) {
-                // In production, use window.location for a full page reload
-                window.location.href = '/dashboard';
+                try {
+                  // In production, use window.location for a full page reload
+                  console.log('Using hard navigation in production');
+
+                  // Double-check that auth data is stored before navigation
+                  const storedToken = localStorage.getItem('token');
+                  const storedUser = localStorage.getItem('user');
+
+                  if (!storedToken || !storedUser) {
+                    console.warn('Auth data not found in localStorage before navigation, re-storing...');
+                    // Re-store the data
+                    localStorage.setItem('token', token);
+                    localStorage.setItem('user', JSON.stringify({
+                      name,
+                      email,
+                      profilePicture
+                    }));
+                  }
+
+                  // Navigate to dashboard
+                  window.location.href = '/dashboard';
+                } catch (e) {
+                  console.error('Error during navigation:', e);
+                  // Fallback to React Router
+                  navigate('/dashboard');
+                }
               } else {
                 // In development, use React Router
+                console.log('Using React Router navigation in development');
                 navigate('/dashboard');
               }
             }, delay);
