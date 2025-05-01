@@ -72,6 +72,34 @@ const AuthCallback = () => {
           }
         }
 
+        // 3. If still no token, check if we're on a deployed site with a 404 issue
+        // This is a special case for Render and similar hosting services
+        if (!token && import.meta.env.PROD) {
+          console.log('Production environment detected, checking for token in URL path');
+
+          // Check if the token might be in the URL path (due to SPA routing issues)
+          const path = window.location.pathname;
+          if (path.includes('auth-callback#token=')) {
+            console.log('Found token in URL path, extracting...');
+            const pathParts = path.split('auth-callback#token=');
+            if (pathParts.length > 1) {
+              let pathToken = pathParts[1];
+              if (pathToken && pathToken.includes('&')) {
+                pathToken = pathToken.split('&')[0];
+              }
+
+              try {
+                pathToken = decodeURIComponent(pathToken);
+                console.log('Found and decoded token from URL path, first 10 chars:',
+                  pathToken.substring(0, 10) + '...');
+                token = pathToken;
+              } catch (e) {
+                console.error('Error decoding token from URL path:', e);
+              }
+            }
+          }
+        }
+
         // 3. If still no token, try localStorage as a last resort
         // (in case it was stored there in a previous attempt)
         if (!token) {
