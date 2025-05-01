@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+import emailjs from '@emailjs/browser';
 
 const AuthCallback = () => {
   const navigate = useNavigate();
@@ -148,12 +149,37 @@ const AuthCallback = () => {
 
             // Parse the JWT payload
             const payload = JSON.parse(jsonPayload);
-            const { name, email, profilePicture } = payload;
+            const { name, email, profilePicture, isFirstLogin } = payload;
 
-            console.log('User info from token:', { name, email, profilePicture });
+            console.log('User info from token:', { name, email, profilePicture, isFirstLogin });
 
             if (!name || !email) {
               throw new Error('Token missing required user information');
+            }
+
+            // Send welcome email if this is the first login
+            if (isFirstLogin) {
+              console.log('First time login detected, sending welcome email');
+              try {
+                // Send welcome email using EmailJS
+                await emailjs.send(
+                  "service_zs8dfds", // Your EmailJS service ID
+                  "template_ixw0fad", // Your EmailJS template ID
+                  {
+                    name: name,
+                    email: email
+                  },
+                  "C9rw1HuEBWiPQBXxZ" // Your EmailJS public key
+                );
+                console.log('Welcome email sent successfully');
+                toast.success('Welcome email sent!', {
+                  id: 'welcome-email-success',
+                  duration: 5000
+                });
+              } catch (emailError) {
+                console.error('Error sending welcome email:', emailError);
+                // Don't block the authentication process if email fails
+              }
             }
 
             // Store token and user info directly from the token
@@ -179,6 +205,11 @@ const AuthCallback = () => {
 
             // Set a flag in sessionStorage to indicate successful authentication
             sessionStorage.setItem('auth_success', 'true');
+
+            // Set first login flag if applicable
+            if (isFirstLogin) {
+              sessionStorage.setItem('is_first_login', 'true');
+            }
 
             // In production, also store the auth state in sessionStorage
             // This helps with page refreshes and navigation in deployed environments

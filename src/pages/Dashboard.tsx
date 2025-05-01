@@ -38,11 +38,29 @@ const Dashboard = () => {
   // Check for auth_success flag in sessionStorage (set by AuthCallback)
   useEffect(() => {
     const authSuccess = sessionStorage.getItem('auth_success');
+    const isFirstLogin = sessionStorage.getItem('is_first_login');
+
     if (authSuccess === 'true') {
       // Clear the flag
       sessionStorage.removeItem('auth_success');
-      // Show welcome message
-      toast.success('Welcome to your dashboard!', { id: 'dashboard-welcome' });
+
+      // Show different welcome message based on first login status
+      if (isFirstLogin === 'true') {
+        // Clear the first login flag
+        sessionStorage.removeItem('is_first_login');
+
+        // Show special welcome message for first-time users
+        toast.success('Welcome to SkillSync! We\'ve sent you a welcome email.', {
+          id: 'first-login-welcome',
+          duration: 6000
+        });
+      } else {
+        // Show regular welcome message for returning users
+        toast.success('Welcome back to your dashboard!', {
+          id: 'dashboard-welcome',
+          duration: 3000
+        });
+      }
     }
 
     // Verify authentication
