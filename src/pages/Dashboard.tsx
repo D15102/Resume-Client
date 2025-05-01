@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { Upload, FileText, AlertCircle, CheckCircle } from "lucide-react";
 import toast from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
@@ -161,10 +161,39 @@ const Dashboard = () => {
         <div className="max-w-6xl mx-auto px-3 xs:px-4 py-6 xs:py-8 md:py-12 relative z-10">
 
 
-          <motion.h1
+          {/* Welcome message */}
+          <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
+            className={`mb-6 p-4 rounded-lg ${isLight ? 'bg-blue-50' : 'bg-gray-800'} border ${isLight ? 'border-blue-200' : 'border-gray-700'}`}
+          >
+            <div className="flex flex-col sm:flex-row items-center justify-between">
+              <div>
+                <h2 className={`text-lg xs:text-xl font-bold ${isLight ? 'text-gray-800' : 'text-white'}`}>
+                  Welcome to your Dashboard!
+                </h2>
+                <p className={`text-sm xs:text-base ${isLight ? 'text-gray-600' : 'text-gray-300'}`}>
+                  This is where you can analyze and improve your resume.
+                </p>
+              </div>
+              <Link
+                to="/"
+                className={`mt-3 sm:mt-0 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isLight
+                    ? 'bg-white text-primary-light border border-primary-light hover:bg-blue-50'
+                    : 'bg-gray-700 text-primary-dark border border-primary-dark hover:bg-gray-600'
+                }`}
+              >
+                Visit Home Page
+              </Link>
+            </div>
+          </motion.div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
             className="text-xl xs:text-2xl sm:text-3xl md:text-4xl text-center font-bold mb-4 xs:mb-6 md:mb-8"
           >
             Upload Your Resume

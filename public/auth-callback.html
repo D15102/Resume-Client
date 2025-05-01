@@ -136,11 +136,16 @@
 
                     updateMessage('Authentication successful! Redirecting to dashboard...');
 
-                    // Redirect to dashboard
+                    // Redirect to home page
                     setTimeout(() => {
-                      console.log('Redirecting to dashboard...');
-                      // Use absolute path to ensure correct redirection
-                      window.location.href = window.location.origin + '/dashboard';
+                      console.log('Redirecting to home page...');
+
+                      // Get the base URL - handle both root and subdirectory deployments
+                      const baseUrl = window.location.href.split('/auth-callback')[0];
+                      console.log('Base URL detected:', baseUrl);
+
+                      // Redirect to home page
+                      window.location.href = baseUrl + '/';
                     }, 1000);
 
                     return;

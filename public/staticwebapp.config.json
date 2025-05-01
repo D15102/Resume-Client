@@ -1,6 +1,16 @@
 {
   "navigationFallback": {
     "rewrite": "/index.html",
-    "exclude": ["/images/*.{png,jpg,gif}", "/css/*", "/js/*"]
-  }
+    "exclude": ["/images/*.{png,jpg,gif}", "/css/*", "/js/*", "/auth-callback.html"]
+  },
+  "routes": [
+    {
+      "route": "/auth-callback",
+      "rewrite": "/auth-callback.html"
+    },
+    {
+      "route": "/auth-callback/*",
+      "rewrite": "/auth-callback.html"
+    }
+  ]
 }

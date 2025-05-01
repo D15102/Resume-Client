@@ -171,7 +171,7 @@ const AuthCallback = () => {
             localStorage.setItem('temp_auth_token', token);
 
             // Show success toast only once
-            toast.success('Successfully logged in with Google!', { id: 'google-login-success' });
+            toast.success('Successfully logged in with Google! Redirecting to Dashboard...', { id: 'google-login-success', duration: 5000 });
 
             // Navigate to dashboard with a longer delay to ensure state updates in production
             const delay = import.meta.env.PROD ? 1000 : 100;
@@ -226,8 +226,14 @@ const AuthCallback = () => {
                   }
 
                   // Navigate to dashboard with absolute URL
-                  const baseUrl = window.location.origin;
+                  // Get the base URL - handle both root and subdirectory deployments
+                  const baseUrl = window.location.href.split('/auth-callback')[0];
                   console.log('Base URL for navigation:', baseUrl);
+
+                  // Store the base URL in sessionStorage for other components to use
+                  sessionStorage.setItem('base_url', baseUrl);
+
+                  // Navigate to dashboard
                   window.location.href = `${baseUrl}/dashboard`;
 
                   // As a fallback, also try setting a redirect flag

@@ -25,15 +25,45 @@ function AppRoutes() {
 
   // Check for redirect flag on component mount
   useEffect(() => {
+    // Check for redirect flag
     const redirectToDashboard = sessionStorage.getItem('redirect_to_dashboard');
+
+    // Check for base URL (set by AuthCallback)
+    const baseUrl = sessionStorage.getItem('base_url');
+
     if (redirectToDashboard === 'true') {
       console.log('Found redirect flag, navigating to dashboard');
       // Clear the flag
       sessionStorage.removeItem('redirect_to_dashboard');
-      // Navigate to dashboard
+
+      // If we're in production and have a stored base URL, use it for navigation
+      if (import.meta.env.PROD && baseUrl) {
+        console.log('Using stored base URL for navigation:', baseUrl);
+        window.location.href = `${baseUrl}/dashboard`;
+        return;
+      }
+
+      // Otherwise use React Router
       navigate('/dashboard');
     }
-  }, [navigate]);
+
+    // Special handling for auth-callback path in production
+    if (import.meta.env.PROD && location.pathname.includes('auth-callback')) {
+      console.log('Detected auth-callback path in production, checking for token in URL');
+
+      // If we have a token in the URL, extract it and redirect
+      const path = location.pathname;
+      if (path.includes('token=')) {
+        console.log('Found token in URL path, redirecting to auth-callback.html');
+
+        // Get the base URL
+        const currentBaseUrl = window.location.href.split('/auth-callback')[0];
+
+        // Redirect to the static auth-callback.html page
+        window.location.href = `${currentBaseUrl}/auth-callback.html${location.hash}`;
+      }
+    }
+  }, [navigate, location]);
 
   return (
     <>

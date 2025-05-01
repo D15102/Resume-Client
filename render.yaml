@@ -5,6 +5,15 @@ services:
     buildCommand: npm run build
     staticPublishPath: ./dist
     routes:
+      # Special handling for auth-callback route
+      - type: rewrite
+        source: /auth-callback
+        destination: /auth-callback.html
+      # Special handling for auth-callback route with hash
+      - type: rewrite
+        source: /auth-callback/*
+        destination: /auth-callback.html
+      # Default route for all other paths
       - type: rewrite
         source: /*
         destination: /index.html
