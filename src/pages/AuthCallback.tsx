@@ -145,12 +145,26 @@ const AuthCallback = () => {
             // Show success toast only once
             toast.success('Successfully logged in with Google!', { id: 'google-login-success' });
 
-            // Navigate to dashboard with a slight delay to ensure state updates
+            // Navigate to dashboard with a longer delay to ensure state updates in production
+            const delay = import.meta.env.PROD ? 500 : 100;
+            console.log(`Using navigation delay of ${delay}ms in ${import.meta.env.PROD ? 'production' : 'development'} mode`);
+
+            // Set a flag in sessionStorage to indicate successful authentication
+            sessionStorage.setItem('auth_success', 'true');
+
             setTimeout(() => {
               // Clear the backup token after successful navigation
               localStorage.removeItem('temp_auth_token');
-              navigate('/dashboard');
-            }, 100);
+
+              // Force a hard navigation to dashboard to ensure clean state
+              if (import.meta.env.PROD) {
+                // In production, use window.location for a full page reload
+                window.location.href = '/dashboard';
+              } else {
+                // In development, use React Router
+                navigate('/dashboard');
+              }
+            }, delay);
           } catch (error: any) {
             console.error('Error processing token:', error);
             toast.error(`Authentication failed: ${error.message || 'Unknown error'}`, { id: 'auth-error' });

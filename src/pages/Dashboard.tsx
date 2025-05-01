@@ -1,10 +1,11 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { Upload, FileText, AlertCircle, CheckCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
 
 // Resume score interface
 interface ResumeScore {
@@ -28,9 +29,28 @@ const Dashboard = () => {
   const serverUrl = import.meta.env.VITE_SERVER_URL || "";
 
   const { isLight } = useTheme();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [score, setScore] = useState<ResumeScore | null>(null);
+
+  // Check for auth_success flag in sessionStorage (set by AuthCallback)
+  useEffect(() => {
+    const authSuccess = sessionStorage.getItem('auth_success');
+    if (authSuccess === 'true') {
+      // Clear the flag
+      sessionStorage.removeItem('auth_success');
+      // Show welcome message
+      toast.success('Welcome to your dashboard!', { id: 'dashboard-welcome' });
+    }
+
+    // Verify authentication
+    if (!isAuthenticated) {
+      console.log('User not authenticated, redirecting to login');
+      navigate('/login');
+    }
+  }, [isAuthenticated, navigate]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -84,7 +104,7 @@ const Dashboard = () => {
     }
   };
 
-  const navigate = useNavigate();
+
 
   const handleEditResume = () => {
     if (!file) return;
