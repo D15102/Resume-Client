@@ -15,6 +15,8 @@ import AuthCallback from './pages/AuthCallback.tsx';
 import { AnimatePresence } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
+import Clarity from '@microsoft/clarity'
+
 
 // Import global styles
 import './styles/globals.css';
