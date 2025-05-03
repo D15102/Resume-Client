@@ -41,9 +41,167 @@ const Dashboard = () => {
   const [analyzing, setAnalyzing] = useState(false);
   const [score, setScore] = useState<ResumeScore | null>(null);
   const [emailSent, setEmailSent] = useState(false);
+  const [tourShown, setTourShown] = useState(false);
 
-  
- 
+  // Function to check if the tour has been completed
+  const hasTourBeenCompleted = () => {
+    const completed = localStorage.getItem('dashboard_tour_completed') === 'true';
+    console.log('Checking if tour completed:', completed, 'Value in localStorage:', localStorage.getItem('dashboard_tour_completed'));
+    return completed;
+  };
+
+  // Function to reset the tour completion status (for testing)
+  const resetTourStatus = () => {
+    localStorage.removeItem('dashboard_tour_completed');
+    setTourShown(false);
+    console.log('Tour status reset, will show on next visit');
+  };
+
+  // Function to start the tour manually or automatically
+  const startTour = (source = "manual", forceShow = false) => {
+    // Prevent showing the tour multiple times in the same session
+    if (tourShown && source === "default-auto-start") {
+      console.log("Tour already shown in this session, not showing again");
+      return;
+    }
+
+    // For default auto-start, we want to show the tour by default
+    // but not show it again if the user has completed it before
+    if (source === "default-auto-start" && hasTourBeenCompleted()) {
+      console.log("Tour already completed, not showing again for default auto-start");
+      return;
+    }
+
+    // For other sources, respect the forceShow parameter
+    if (!forceShow && source !== "button-click" && hasTourBeenCompleted()) {
+      console.log("Tour already completed, not showing again");
+      return;
+    }
+
+    console.log(`Starting dashboard tour (source: ${source})`);
+
+    // Mark that the tour has been shown in this session
+    setTourShown(true);
+
+    try {
+      // Check if elements exist before starting tour
+      const welcomeElement = document.getElementById("dashboard-welcome");
+      const uploadElement = document.querySelector(".upload-container");
+      const logoElement = document.querySelector(".navbar-logo");
+      const homeButtonElement = document.querySelector(".visit-home-page");
+
+      if (!welcomeElement || !uploadElement) {
+        console.warn("Some tour elements are not available yet. Delaying tour...");
+        // Retry after a longer delay if elements aren't ready
+        setTimeout(() => startTour("delayed", forceShow), 2000);
+        return;
+      }
+
+      // Function to open the profile dropdown
+      const openProfileDropdown = () => {
+        try {
+          const profilePic = document.querySelector('.profile-picture');
+          if (profilePic) {
+            (profilePic as HTMLElement).click();
+            console.log('Clicked profile picture to open dropdown');
+            return true;
+          }
+        } catch (error) {
+          console.error('Error clicking profile picture:', error);
+        }
+        return false;
+      };
+
+      const driverObj = driver({
+        showProgress: true,
+        animate: true,
+        overlayColor: 'rgba(0, 0, 0, 0.7)',
+        stagePadding: 10,
+        nextBtnText: 'Next',
+        prevBtnText: 'Previous',
+        doneBtnText: 'Got it!',
+        allowClose: false,
+        onHighlightStarted: (element) => {
+          // If we're highlighting the logout button, make sure the profile dropdown is open
+          if (element && element.classList.contains('logout-button')) {
+            openProfileDropdown();
+          }
+        },
+        steps: [
+          {
+            element: "#dashboard-welcome",
+            popover: {
+              title: "Welcome to SkillSync!",
+              description: "This is your dashboard where you can analyze and improve your resume."
+            },
+          },
+          {
+            element: ".upload-container",
+            popover: {
+              title: "Upload Your Resume",
+              description: "Drag and drop your resume file here or click to browse files. We support PDF, DOC, and DOCX formats."
+            },
+          },
+          // Only add logo step if element exists
+          ...(logoElement ? [{
+            element: ".navbar-logo",
+            popover: {
+              title: "Navigation",
+              description: "Click on the logo anytime to return to the home page."
+            },
+          }] : []),
+          // Only add home button step if element exists
+          ...(homeButtonElement ? [{
+            element: ".visit-home-page",
+            popover: {
+              title: "Home Page Access",
+              description: "You can also use this button to visit the home page while keeping your session active."
+            },
+          }] : []),
+          // Add profile picture step
+          {
+            element: ".profile-picture",
+            popover: {
+              title: "Your Profile",
+              description: "Click on your profile picture to access account options and sign out."
+            }
+          },
+          // Add logout button step (will be shown after clicking profile picture)
+          {
+            element: ".logout-button",
+            popover: {
+              title: "Sign Out",
+              description: "Click here to sign out of your account when you're done."
+            },
+          },
+        ],
+        onDeselected: (element) => {
+          console.log('Tour step completed for', element);
+
+          // If we're on the profile picture step, open the dropdown for the next step
+          if (element && element.classList.contains('profile-picture')) {
+            openProfileDropdown();
+          }
+        },
+        onDestroyed: () => {
+          // Mark the tour as completed when it's closed or completed
+          localStorage.setItem('dashboard_tour_completed', 'true');
+          console.log('Tour completed and marked in localStorage:', localStorage.getItem('dashboard_tour_completed'));
+
+          // Also update the state to prevent showing the tour again in this session
+          setTourShown(true);
+        }
+      });
+
+      // Start the tour
+      driverObj.drive();
+    } catch (error) {
+      console.error("Error starting tour:", error);
+    }
+  };
+
+
+
   // Function to send welcome email
   const sendWelcomeEmail = async (name: string, email: string) => {
     if (emailSent) return; // Prevent multiple emails
@@ -78,6 +236,27 @@ const Dashboard = () => {
     }
   };
 
+  // Start the tour automatically when the component mounts
+  useEffect(() => {
+    console.log("Dashboard: Component mounted, checking if tour should be shown");
+
+    // Check if the tour has been completed before
+    const tourCompleted = localStorage.getItem('dashboard_tour_completed') === 'true';
+    console.log("Tour completed status on mount:", tourCompleted);
+
+    if (!tourCompleted) {
+      console.log("Tour not completed, will show by default");
+
+      // Small delay to ensure the component is fully rendered
+      setTimeout(() => {
+        // Show the tour by default for first-time visitors
+        startTour('default-auto-start', true);
+      }, 1500);
+    } else {
+      console.log("Tour already completed, won't show by default");
+    }
+  }, []);
+
   // Check for auth_success flag in sessionStorage (set by AuthCallback)
   useEffect(() => {
     console.log("Dashboard: Checking authentication flags");
@@ -107,22 +286,7 @@ const Dashboard = () => {
           }
         );
         console.log("Dashboard: Showed first-time user welcome message");
-        //Driver Js Configuration
-        const driverObj = driver({
-          showProgress: true,
-          steps: [
-            {
-              element: ".upload-container",
-              popover: { title: "Upload Resume", description: "You Can Upload Your Resume By Clicking On Container" },
-            },
-            {
-              element: ".visit-home-page",
-              popover: { title: "To Home Page", description: "You Can Go To Home Page Through Below Button" },
-            },
-
-          ],
-        });
-        driverObj.drive()
+        // First login detected - no need to start tour here as it's started by default
         // Try to send welcome email if we have user data
         if (user && user.name && user.email) {
           sendWelcomeEmail(user.name, user.email);
@@ -147,6 +311,8 @@ const Dashboard = () => {
           duration: 3000,
         });
         console.log("Dashboard: Showed returning user welcome message");
+
+        // Returning user detected - no need to start tour here as it's started by default
       }
     } else {
       // Check localStorage as a fallback
@@ -208,13 +374,20 @@ const Dashboard = () => {
                   sendWelcomeEmail(userData.name, userData.email);
                 }
               }
+
+              // Token-loaded user detected - no need to start tour here as it's started by default
             }
           } catch (tokenError) {
             console.error("Dashboard: Error decoding token:", tokenError);
           }
         } catch (e) {
           console.error("Dashboard: Error parsing user data:", e);
+
+          // Error parsing user data - no need to start tour here as it's started by default
         }
+      } else {
+        // No stored user data - no need to start tour here as it's started by default
+        console.log("No stored user data detected");
       }
     }
 
@@ -339,6 +512,7 @@ const Dashboard = () => {
         <div className="max-w-6xl mx-auto px-3 xs:px-4 py-6 xs:py-8 md:py-12 relative z-10">
           {/* Welcome message */}
           <motion.div
+            id="dashboard-welcome"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
@@ -363,16 +537,51 @@ const Dashboard = () => {
                   This is where you can analyze and improve your resume.
                 </p>
               </div>
-              <Link
-                to="/"
-                className={`visit-home-page mt-3 sm:mt-0 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isLight
-                    ? "bg-white text-primary-light border border-primary-light hover:bg-blue-50"
-                    : "bg-gray-700 text-primary-dark border border-primary-dark hover:bg-gray-600"
-                }`}
-              >
-                Visit Home Page
-              </Link>
+              <div className="flex flex-col xs:flex-row gap-2 mt-3 sm:mt-0">
+                <button
+                  onClick={() => startTour('button-click', true)}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isLight
+                      ? "bg-white text-blue-600 border border-blue-600 hover:bg-blue-50"
+                      : "bg-gray-700 text-blue-400 border border-blue-400 hover:bg-gray-600"
+                  }`}
+                >
+                  <span className="flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Take Tour
+                  </span>
+                </button>
+                {/* Hidden buttons for testing */}
+                <div className="hidden">
+                  <button
+                    onClick={resetTourStatus}
+                    className="px-2 py-1 text-xs bg-red-500 text-white rounded mr-2"
+                  >
+                    Reset Tour
+                  </button>
+                  <button
+                    onClick={() => {
+                      const status = localStorage.getItem('dashboard_tour_completed');
+                      alert(`Tour status: ${status || 'not set'}\nTour shown in session: ${tourShown}`);
+                    }}
+                    className="px-2 py-1 text-xs bg-blue-500 text-white rounded"
+                  >
+                    Check Status
+                  </button>
+                </div>
+                <Link
+                  to="/"
+                  className={`visit-home-page px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isLight
+                      ? "bg-white text-primary-light border border-primary-light hover:bg-blue-50"
+                      : "bg-gray-700 text-primary-dark border border-primary-dark hover:bg-gray-600"
+                  }`}
+                >
+                  Visit Home Page
+                </Link>
+              </div>
             </div>
           </motion.div>
 

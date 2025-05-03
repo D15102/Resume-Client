@@ -196,7 +196,7 @@ const Navbar = () => {
                     src={profileImage}
                     alt="Profile"
                     title="Profile"
-                    className={`h-10 w-10 rounded-full object-cover border-2 cursor-pointer ${
+                    className={`profile-picture h-10 w-10 rounded-full object-cover border-2 cursor-pointer ${
                       isLight ? "border-primary-light" : "border-primary-dark"
                     }`}
                     onClick={() => setShowProfile((prev) => !prev)}
@@ -226,7 +226,7 @@ const Navbar = () => {
                         </div>
                         <button
                           onClick={handleLogout}
-                          className="w-full bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 transition"
+                          className="logout-button w-full bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 transition"
                         >
                           Logout
                         </button>
@@ -371,7 +371,7 @@ const Navbar = () => {
 
                   <button
                     onClick={handleLogout}
-                    className="w-full mt-2 py-3 px-4 bg-red-500 text-white font-medium hover:bg-red-600 transition"
+                    className="logout-button w-full mt-2 py-3 px-4 bg-red-500 text-white font-medium hover:bg-red-600 transition"
                   >
                     Logout
                   </button>
