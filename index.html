@@ -22,6 +22,18 @@
       }(window.location))
     </script>
     <!-- End Single Page Apps for GitHub Pages / Render -->
+
+    <!-- PDF.js library -->
+    <script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+    <script>
+      // Set the worker source
+      if (window.pdfjsLib) {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+      }
+    </script>
+
+    <!-- Mammoth.js library for DOCX conversion -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
   </head>
   <body>
     <div id="root"></div>
