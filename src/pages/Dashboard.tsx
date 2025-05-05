@@ -470,6 +470,8 @@ const Dashboard = () => {
       // Format for tracking
       const format = isPDF ? "pdf" : isDocx ? "docx" : "text";
 
+      // For PDF files, we'll still use the EditResume component which has the PDF viewer
+      // and conversion option. For other file types, we'll use the appropriate editor.
       navigate("/editResume", {
         state: {
           name: file.name,

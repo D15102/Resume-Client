@@ -9,6 +9,7 @@ import ResumeTemplates from './pages/ResumeTemplates.tsx';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import EditResume from './pages/EditResume.tsx'
+import ConvertedPDFEditor from './pages/ConvertedPDFEditor.tsx'
 import ProtectedRoute from './pages/ProtectedRoute.tsx';
 import EditResumePage from './pages/EditResumePage.tsx';
 import AuthCallback from './pages/AuthCallback.tsx';
@@ -84,6 +85,7 @@ function AppRoutes() {
           } />
           <Route path="/templates" element={<ResumeTemplates />} />
           <Route path='/editResume' element={<EditResume />} />
+          <Route path='/convertedPDF' element={<ConvertedPDFEditor />} />
           <Route path='/resumepage' element={
             <ProtectedRoute>
               <EditResumePage />

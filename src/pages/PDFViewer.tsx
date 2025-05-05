@@ -38,8 +38,8 @@ const PDFViewer = ({ fileUrl }: { fileUrl: string }) => {
         })
         setConversionStatus("Conversion successful! Redirecting to editor...");
 
-        // Navigate to EditResume with the converted document
-        navigate('/editResume', {
+        // Navigate to the dedicated ConvertedPDFEditor with the converted document
+        navigate('/convertedPDF', {
           state: {
             format: "converted-docx",
             name: result.fileName,
