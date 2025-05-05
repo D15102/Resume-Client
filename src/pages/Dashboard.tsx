@@ -123,7 +123,8 @@ const Dashboard = () => {
         nextBtnText: 'Next',
         prevBtnText: 'Previous',
         doneBtnText: 'Got it!',
-        allowClose: false,
+        allowClose: true, // Allow users to close the tour when they want
+        showButtons: ['next', 'previous', 'close'], // Include close button in the UI
         onHighlightStarted: (element) => {
           // If we're highlighting the logout button, make sure the profile dropdown is open
           if (element && element.classList.contains('logout-button')) {
@@ -135,7 +136,7 @@ const Dashboard = () => {
             element: "#dashboard-welcome",
             popover: {
               title: "Welcome to SkillSync!",
-              description: "This is your dashboard where you can analyze and improve your resume."
+              description: "This is your dashboard where you can analyze and improve your resume.<br><br><em>You can close this tour at any time by clicking the X button or pressing ESC.</em>"
             },
           },
           {
@@ -193,8 +194,43 @@ const Dashboard = () => {
 
           // Also update the state to prevent showing the tour again in this session
           setTourShown(true);
+
+          // Show a toast message if the tour was closed manually
+          // toast.success("Tour closed. You can restart it anytime from the dashboard.", {
+          //   duration: 900,
+          //   id: "tour-closed"
+          // });
+        },
+        onCloseClick: () => {
+          // Mark the tour as completed when manually closed
+          localStorage.setItem('dashboard_tour_completed', 'true');
+          console.log('Tour manually closed and marked as completed');
+
+          // Update the state to prevent showing the tour again in this session
+          setTourShown(true);
+
+          // Actually close the tour when X is clicked
+          driverObj.destroy();
+
+          // Show a toast message
+          // toast.success("Tour closed. You can restart it anytime from the dashboard.", {
+          //   duration: 3000,
+          //   id: "tour-closed"
+          // });
         }
       });
+
+      // Add keyboard shortcut (ESC) to close the tour
+      const handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          driverObj.destroy();
+          // Remove the event listener after the tour is closed
+          document.removeEventListener('keydown', handleKeyDown);
+        }
+      };
+
+      // Add the event listener
+      document.addEventListener('keydown', handleKeyDown);
 
       // Start the tour
       driverObj.drive();

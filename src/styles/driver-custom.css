@@ -50,8 +50,8 @@ body.dark .driver-popover,
   --popover-btn-secondary-text: #f3f4f6;
   --popover-btn-secondary-hover: #4b5563;
   --popover-progress-text: #9ca3af;
-  --popover-close-btn: #6b7280;
-  --popover-close-btn-hover: #d1d5db;
+  --popover-close-btn: #ffffff; /* White for maximum visibility in dark mode */
+  --popover-close-btn-hover: #ffffff; /* Stay white on hover */
   --popover-arrow-color: #1f2937;
   --primary-shadow-color: rgba(139, 92, 246, 0.5); /* Violet shadow for dark theme */
 }
@@ -75,17 +75,56 @@ body.dark .driver-popover,
   font-family: inherit;
 }
 
-/* Close button styling */
+/* Close button styling - simplified to work with driver.js structure */
 .driver-popover-close-btn {
   color: var(--popover-close-btn);
-  font-size: 22px;
+  font-size: 24px;
   top: 12px;
   right: 12px;
-  transition: color 0.2s ease;
+  transition: all 0.2s ease;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 10000; /* Ensure it's above other elements */
+  cursor: pointer;
+  font-weight: bold;
+}
+
+/* Make the X symbol more visible */
+.driver-popover-close-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 3;
 }
 
 .driver-popover-close-btn:hover {
   color: var(--popover-close-btn-hover);
+  background-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Special styling for dark mode */
+body.dark .driver-popover-close-btn,
+.dark .driver-popover-close-btn {
+  background-color: rgba(255, 255, 255, 0.25);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+body.dark .driver-popover-close-btn:hover,
+.dark .driver-popover-close-btn:hover {
+  background-color: rgba(255, 255, 255, 0.35);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.6);
 }
 
 /* Footer styling */
@@ -164,6 +203,40 @@ body.dark .driver-popover,
 .driver-popover-btn-disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Close button in footer (if shown) */
+.driver-popover-close-btn.driver-popover-footer-btn {
+  position: static;
+  width: auto;
+  height: auto;
+  background: none;
+  border: none;
+  box-shadow: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  background-color: var(--popover-btn-secondary-bg);
+  color: var(--popover-btn-secondary-text);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.driver-popover-close-btn.driver-popover-footer-btn:hover {
+  background-color: var(--popover-btn-secondary-hover);
+  transform: none;
+}
+
+/* Dark mode for footer close button */
+body.dark .driver-popover-close-btn.driver-popover-footer-btn,
+.dark .driver-popover-close-btn.driver-popover-footer-btn {
+  background-color: var(--popover-btn-secondary-bg);
+  color: var(--popover-btn-secondary-text);
+  border: none;
+}
+
+body.dark .driver-popover-close-btn.driver-popover-footer-btn:hover,
+.dark .driver-popover-close-btn.driver-popover-footer-btn:hover {
+  background-color: var(--popover-btn-secondary-hover);
 }
 
 /* Arrow styling */
