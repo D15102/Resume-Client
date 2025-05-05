@@ -9,6 +9,8 @@ import { useAuth } from "../context/AuthContext";
 import emailjs from "@emailjs/browser";
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
+// Import our custom styles for driver.js
+import "../styles/driver-custom.css";
 
 // Resume score interface
 interface ResumeScore {
@@ -112,6 +114,7 @@ const Dashboard = () => {
         return false;
       };
 
+      // Create driver instance
       const driverObj = driver({
         showProgress: true,
         animate: true,

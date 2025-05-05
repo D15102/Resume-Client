@@ -1,5 +1,7 @@
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
+// Import our custom styles (these will override the default styles)
+import '../styles/driver-custom.css';
 
 // Define tour steps for the dashboard
 const dashboardTourSteps = [
@@ -47,6 +49,9 @@ const dashboardTourSteps = [
 
 // Create a tour guide instance
 export const createDashboardTour = () => {
+  // Get the current theme from body class
+  const isDarkMode = document.body.classList.contains('dark');
+
   const driverObj = driver({
     showProgress: true,
     steps: dashboardTourSteps,
@@ -54,8 +59,8 @@ export const createDashboardTour = () => {
     prevBtnText: 'Previous',
     doneBtnText: 'Done',
     animate: true,
-    overlayColor: 'rgba(0, 0, 0, 0.7)',
-    stagePadding: 10,
+    overlayColor: isDarkMode ? 'rgba(0, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.7)',
+    stagePadding: 12,
     onHighlightStarted: (element) => {
       // Scroll to element if needed
       element.scrollIntoView({ behavior: 'smooth', block: 'center' });
