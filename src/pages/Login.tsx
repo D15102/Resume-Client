@@ -7,6 +7,7 @@ import { IoMdEyeOff } from "react-icons/io";
 import { IoMdEye } from "react-icons/io";
 import { useTheme } from "../context/ThemeContext";
 import { motion } from 'framer-motion';
+import emailjs from '@emailjs/browser';
 
 const pageVariants = {
   initial: { opacity: 0, y: -20 },
@@ -31,8 +32,15 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const { isLight } = useTheme();
+
+  // Redirect to dashboard if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,6 +48,10 @@ const Login = () => {
       console.log("Server URL:", serverUrl);
       console.log("Attempting to login with:", { email, password: "********" });
 
+      // Show loading toast
+      toast.loading('Verifying credentials...', { id: 'login-loading' });
+
+      // First, check if the user exists in the database
       const response = await fetch(`${serverUrl}/api/auth/login`, {
         method: "POST",
         headers: {
@@ -54,14 +66,95 @@ const Login = () => {
       const data = await response.json();
       console.log("Response data:", data);
 
+      // Dismiss loading toast
+      toast.dismiss('login-loading');
+
       if (!response.ok) {
         throw new Error(data.message || 'Login failed');
       }
 
+      // If we get here, the user exists and credentials are valid
       if (data.token && data.user) {
-        login(data.token, data.user);
-        toast.success("Login successful!");
-        navigate("/dashboard");
+        // Store user information for OTP verification
+        sessionStorage.setItem('verificationEmail', email);
+
+        // Get phone number from response if available, otherwise use a default
+        const phoneNumber = data.user.phoneNumber || '+1234567890';
+        sessionStorage.setItem('verificationPhone', phoneNumber);
+
+        // Store token temporarily for after OTP verification
+        sessionStorage.setItem('temp_auth_token', data.token);
+        sessionStorage.setItem('temp_user_data', JSON.stringify(data.user));
+
+        try {
+          // Show loading toast for OTP sending
+          toast.loading('Sending OTP...', { id: 'sending-otp' });
+
+          // Get the OTP from the server response or generate one
+          let otpValue = '';
+
+          // Send OTP request to the server (SMS functionality is commented out on the server)
+          const otpResponse = await fetch(`${serverUrl}/api/auth/send-otp`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ phone: phoneNumber.replace('+', '') }), // Still sending phone for compatibility
+          });
+
+          const otpData = await otpResponse.json();
+
+          // Store the OTP value for email sending
+          if (otpResponse.ok && otpData.success) {
+            // If the server returns the OTP value, use it
+            otpValue = otpData.otp || '123456'; // Fallback to a default if not provided
+
+            // Send OTP via email using EmailJS
+            try {
+              // Initialize EmailJS
+              emailjs.init("C9rw1HuEBWiPQBXxZ");
+
+              // Send OTP email using EmailJS with the template ID provided by the user
+              // Replace "template_login_otp" with the actual template ID the user provides
+              await emailjs.send(
+                "service_zs8dfds", // Your EmailJS service ID
+                "template_7dnvzrf", // Replace this with the template ID provided by the user
+                {
+                  name: data.user.name || 'User',
+                  email: email,
+                  otp: otpValue, // Send the OTP in the email
+                  phoneNumber: phoneNumber // Include phone number in case it's needed in the template
+                }
+              );
+
+              console.log('OTP email sent successfully');
+            } catch (emailError) {
+              console.error('Error sending OTP email:', emailError);
+              // Don't block the process if email fails
+            }
+
+            // Dismiss loading toast
+            toast.dismiss('sending-otp');
+
+            // Show success toast
+            toast.success("OTP sent successfully. Please verify your identity.");
+
+            // Redirect to OTP verification page
+            navigate("/verify-otp");
+          } else {
+            throw new Error(otpData.message || 'Failed to send OTP');
+          }
+        } catch (otpError) {
+          console.error('OTP sending error:', otpError);
+          toast.error('Failed to send OTP. Please try again.');
+
+          // Dismiss loading toast if it's still showing
+          toast.dismiss('sending-otp');
+
+          // Even if OTP sending fails, we'll still redirect to verification
+          // In a production app, you might want to handle this differently
+          navigate("/verify-otp");
+        }
       } else {
         throw new Error('Invalid response from server');
       }
@@ -82,20 +175,36 @@ const Login = () => {
 
     const params = new URLSearchParams(window.location.search);
     const error = params.get('error');
+    const message = params.get('message');
 
     if (error) {
+      console.error('Auth error:', error);
+      console.error('Error message:', message);
+
       switch (error) {
         case 'auth_failed':
-          toast.error('Google authentication failed', { id: 'google-auth-error' });
+          toast.error(message || 'Google authentication failed. Please try again.', {
+            id: 'google-auth-error',
+            duration: 5000
+          });
           break;
         case 'session_error':
-          toast.error('Session error occurred', { id: 'session-error' });
+          toast.error(message || 'Session error occurred. Please try again.', {
+            id: 'session-error',
+            duration: 5000
+          });
           break;
         case 'server_error':
-          toast.error('Server error occurred', { id: 'server-error' });
+          toast.error(message || 'Server error occurred. Please try again.', {
+            id: 'server-error',
+            duration: 5000
+          });
           break;
         default:
-          toast.error('Authentication error', { id: 'auth-error' });
+          toast.error(message || 'Authentication error. Please try again.', {
+            id: 'auth-error',
+            duration: 5000
+          });
       }
 
       // Clean up the URL

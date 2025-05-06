@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserPlus } from 'lucide-react';
+import { UserPlus, Phone } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTheme } from '../context/ThemeContext';
 import {motion} from 'framer-motion'
@@ -16,10 +16,11 @@ const SignUp = () => {
   const serverUrl = import.meta.env.VITE_SERVER_URL || '';
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const form = useRef();
+  const form = useRef<HTMLFormElement>(null);
   const {isLight} = useTheme()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,12 +28,25 @@ const SignUp = () => {
     setIsLoading(true);
 
     try {
-      console.log("Attempting to sign up with:", { name, email, password: "********" });
+      // Validate phone number format
+      const phoneRegex = /^\+?[0-9]{10,15}$/;
+      if (!phoneRegex.test(phoneNumber)) {
+        toast.error('Please enter a valid phone number (10-15 digits)');
+        setIsLoading(false);
+        return;
+      }
+
+      console.log("Attempting to sign up with:", {
+        name,
+        email,
+        phoneNumber,
+        password: "********"
+      });
 
       const response = await fetch(`${serverUrl}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, phoneNumber, password }),
         credentials: 'include' // Include cookies in the request
       });
 
@@ -52,8 +66,9 @@ const SignUp = () => {
       if (response.ok) {
         toast.success('Account created successfully!');
         emailjs.send("service_zs8dfds","template_ixw0fad",{
-          name : name,
-          email : email
+          name: name,
+          email: email,
+          phoneNumber: phoneNumber
         },"C9rw1HuEBWiPQBXxZ")
         .then(
           ()=> toast.success("Email Sent Successfully !")
@@ -61,7 +76,44 @@ const SignUp = () => {
         .catch(
           ()=> toast.error("Error Sending Email !")
         )
-        navigate('/login');
+
+        // Store email and phone number in sessionStorage for OTP verification
+        sessionStorage.setItem('verificationEmail', email);
+        sessionStorage.setItem('verificationPhone', phoneNumber);
+
+        try {
+          // Show loading toast for OTP sending
+          toast.loading('Sending OTP...', { id: 'signup-sending-otp' });
+
+          // Send OTP to the user's phone number
+          const otpResponse = await fetch(`${serverUrl}/api/auth/send-otp`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ phone: phoneNumber.replace('+', '') }),
+          });
+
+          const otpData = await otpResponse.json();
+
+          // Dismiss loading toast
+          toast.dismiss('signup-sending-otp');
+
+          if (otpResponse.ok && otpData.success) {
+            // Show success toast
+            toast.success("OTP sent successfully. Please verify your identity.");
+          } else {
+            console.error('Failed to send OTP:', otpData.message);
+            toast.error('Failed to send OTP, but you can still proceed to verification.');
+          }
+        } catch (otpError) {
+          console.error('OTP sending error:', otpError);
+          toast.error('Failed to send OTP, but you can still proceed to verification.');
+          toast.dismiss('signup-sending-otp');
+        }
+
+        // Navigate to OTP verification page
+        navigate('/verify-otp');
       } else {
         toast.error(data.message || 'Signup failed');
       }
@@ -153,6 +205,39 @@ const SignUp = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
+            </div>
+            <div>
+              <label htmlFor="phoneNumber" className={`block text-xs xs:text-sm font-medium mb-1 ${
+                isLight ? 'text-gray-700' : 'text-gray-300'
+              }`}>
+                Phone Number
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Phone className={`h-4 w-4 ${
+                    isLight ? 'text-gray-400' : 'text-gray-500'
+                  }`} />
+                </div>
+                <input
+                  id="phoneNumber"
+                  type="tel"
+                  name="phoneNumber"
+                  required
+                  className={`appearance-none block w-full pl-10 pr-3 py-2 border rounded-md text-xs xs:text-sm ${
+                    isLight
+                      ? 'border-gray-300 placeholder-gray-400 text-gray-900 focus:ring-primary-light focus:border-primary-light bg-white'
+                      : 'border-gray-700 placeholder-gray-500 text-white focus:ring-primary-dark focus:border-primary-dark bg-gray-800'
+                  } focus:outline-none focus:ring-2`}
+                  placeholder="+1234567890"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                />
+              </div>
+              <p className={`mt-1 text-xs ${
+                isLight ? 'text-gray-500' : 'text-gray-400'
+              }`}>
+                Enter 10 digits (e.g., 9515411132)
+              </p>
             </div>
             <div>
               <label htmlFor="password" className={`block text-xs xs:text-sm font-medium mb-1 ${

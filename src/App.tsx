@@ -13,6 +13,7 @@ import ConvertedPDFEditor from './pages/ConvertedPDFEditor.tsx'
 import ProtectedRoute from './pages/ProtectedRoute.tsx';
 import EditResumePage from './pages/EditResumePage.tsx';
 import AuthCallback from './pages/AuthCallback.tsx';
+import OTPVerification from './pages/OTPVerification.tsx';
 import { AnimatePresence } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
@@ -78,6 +79,7 @@ function AppRoutes() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
+          <Route path="/verify-otp" element={<OTPVerification />} />
           <Route path="/dashboard" element={
             <ProtectedRoute>
               <Dashboard />
