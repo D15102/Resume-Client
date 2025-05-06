@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
 import { useTheme } from "../context/ThemeContext";
-import { Shield, ArrowLeft, Power } from "lucide-react";
+import { Shield, ArrowLeft, Power, LogIn } from "lucide-react";
 import axios from 'axios';
 import emailjs from '@emailjs/browser';
 import {
@@ -439,7 +439,7 @@ const OTPVerification = () => {
                         isLight ? 'bg-white' : 'bg-gray-800'
                       }`}
                     >
-                      <Power size={32} className={`${isLight ? 'text-primary-light' : 'text-primary-dark'}`} />
+                      <LogIn size={32} className={`${isLight ? 'text-primary-light' : 'text-primary-dark'}`} />
                     </motion.div>
                   </div>
                 )}
