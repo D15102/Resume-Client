@@ -65,55 +65,87 @@ const SignUp = () => {
 
       if (response.ok) {
         toast.success('Account created successfully!');
-        emailjs.send("service_zs8dfds","template_ixw0fad",{
-          name: name,
-          email: email,
-          phoneNumber: phoneNumber
-        },"C9rw1HuEBWiPQBXxZ")
-        .then(
-          ()=> toast.success("Email Sent Successfully !")
-        )
-        .catch(
-          ()=> toast.error("Error Sending Email !")
-        )
 
         // Store email and phone number in sessionStorage for OTP verification
         sessionStorage.setItem('verificationEmail', email);
         sessionStorage.setItem('verificationPhone', phoneNumber);
 
+        // Set a flag to indicate this is a new user registration (for first login handling)
+        sessionStorage.setItem('is_new_registration', 'true');
+
         try {
           // Show loading toast for OTP sending
           toast.loading('Sending OTP...', { id: 'signup-sending-otp' });
 
-          // Send OTP to the user's phone number
+          // Send OTP to the user's phone number and email
           const otpResponse = await fetch(`${serverUrl}/api/auth/send-otp`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ phone: phoneNumber.replace('+', '') }),
+            body: JSON.stringify({
+              phone: phoneNumber.replace('+', ''),
+              email: email // Include email to help with OTP verification
+            }),
           });
 
           const otpData = await otpResponse.json();
 
-          // Dismiss loading toast
-          toast.dismiss('signup-sending-otp');
-
           if (otpResponse.ok && otpData.success) {
-            // Show success toast
-            toast.success("OTP sent successfully. Please verify your identity.");
+            // Get the OTP from the response
+            const otpValue = otpData.otp || '123456'; // Fallback to a default if not provided
+
+            // Send OTP via email using EmailJS
+            try {
+              // Initialize EmailJS
+              emailjs.init("C9rw1HuEBWiPQBXxZ");
+
+              console.log('Sending OTP email with value:', otpValue);
+
+              // Send OTP email using EmailJS
+              await emailjs.send(
+                "service_zs8dfds", // Your EmailJS service ID
+                "template_7dnvzrf", // Template ID for OTP
+                {
+                  name: name,
+                  email: email,
+                  otp: otpValue,
+                  phoneNumber: phoneNumber
+                },
+                "C9rw1HuEBWiPQBXxZ"
+              );
+
+              console.log('OTP email sent successfully');
+
+              // Store the OTP in sessionStorage for verification (only in development)
+              if (import.meta.env.DEV) {
+                sessionStorage.setItem('debug_otp', otpValue);
+                console.log('OTP stored in sessionStorage for debugging:', otpValue);
+              }
+
+              // Dismiss loading toast
+              toast.dismiss('signup-sending-otp');
+
+              // Show success toast
+              toast.success("OTP sent successfully. Please verify your identity.");
+
+              // Navigate to OTP verification page
+              navigate('/verify-otp');
+            } catch (emailError) {
+              console.error('Error sending OTP email:', emailError);
+              toast.error('Failed to send OTP email. Please try again.');
+              toast.dismiss('signup-sending-otp');
+            }
           } else {
             console.error('Failed to send OTP:', otpData.message);
-            toast.error('Failed to send OTP, but you can still proceed to verification.');
+            toast.error('Failed to send OTP. Please try again.');
+            toast.dismiss('signup-sending-otp');
           }
         } catch (otpError) {
           console.error('OTP sending error:', otpError);
-          toast.error('Failed to send OTP, but you can still proceed to verification.');
+          toast.error('Failed to send OTP. Please try again.');
           toast.dismiss('signup-sending-otp');
         }
-
-        // Navigate to OTP verification page
-        navigate('/verify-otp');
       } else {
         toast.error(data.message || 'Signup failed');
       }

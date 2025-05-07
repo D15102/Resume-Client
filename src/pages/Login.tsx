@@ -99,7 +99,10 @@ const Login = () => {
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ phone: phoneNumber.replace('+', '') }), // Still sending phone for compatibility
+            body: JSON.stringify({
+              phone: phoneNumber.replace('+', ''), // Still sending phone for compatibility
+              email: email // Include email to help with OTP verification
+            }),
           });
 
           const otpData = await otpResponse.json();
@@ -114,11 +117,12 @@ const Login = () => {
               // Initialize EmailJS
               emailjs.init("C9rw1HuEBWiPQBXxZ");
 
+              console.log('Sending OTP email with value:', otpValue);
+
               // Send OTP email using EmailJS with the template ID provided by the user
-              // Replace "template_login_otp" with the actual template ID the user provides
               await emailjs.send(
                 "service_zs8dfds", // Your EmailJS service ID
-                "template_7dnvzrf", // Replace this with the template ID provided by the user
+                "template_7dnvzrf", // Template ID for OTP
                 {
                   name: data.user.name || 'User',
                   email: email,
@@ -128,8 +132,15 @@ const Login = () => {
               );
 
               console.log('OTP email sent successfully');
+
+              // Store the OTP in sessionStorage for verification (only in development)
+              if (import.meta.env.DEV) {
+                sessionStorage.setItem('debug_otp', otpValue);
+                console.log('OTP stored in sessionStorage for debugging:', otpValue);
+              }
             } catch (emailError) {
               console.error('Error sending OTP email:', emailError);
+              toast.error('Failed to send OTP email. Please try again or use Resend OTP option.');
               // Don't block the process if email fails
             }
 

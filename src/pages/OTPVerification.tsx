@@ -45,7 +45,7 @@ const OTPVerification = () => {
   const x = useMotionValue(0)
   const controls = useAnimation()
   const constraintsRef = useRef(null)
-  const textRef: RefObject<HTMLDivElement | null> = useRef(null)
+  const textRef: RefObject<HTMLDivElement> = useRef(null)
 
   const xInput = [0, 164]
   const opacityOutput = [0, 1]
@@ -157,11 +157,20 @@ const OTPVerification = () => {
     setIsLoading(true);
 
     try {
+      console.log('Verifying OTP:', otpValue, 'for email:', email);
+
       // Call the server's verify-otp endpoint
       const response = await axios.post(`${serverUrl}/api/auth/verify-otp`, {
         userOtp: otpValue,
         email: email // Send the email to help the server find the user
       });
+
+      console.log('OTP verification response:', response.data);
+
+      // If the response status is not 200, throw an error to be caught by the catch block
+      if (response.status !== 200) {
+        throw new Error('OTP verification failed with status: ' + response.status);
+      }
 
       if (response.data.success) {
         // Get stored token and user data
@@ -182,6 +191,35 @@ const OTPVerification = () => {
 
             // Show success toast
             toast.success('OTP verified successfully!');
+
+            // Check if this is a first-time login (from server response)
+            const isFirstLogin = response.data.isFirstLogin === true;
+
+            // Check if this is a new registration (from signup process)
+            const isNewRegistration = sessionStorage.getItem('is_new_registration') === 'true';
+
+            // If this is a first login or a new registration, set the flag for the Dashboard to handle
+            if (isFirstLogin || isNewRegistration) {
+              console.log('First-time login detected, setting flag for Dashboard to send welcome email');
+
+              // Set the first login flag
+              sessionStorage.setItem('is_first_login', 'true');
+
+              // Make sure the Google first login flag is NOT set for regular logins
+              sessionStorage.removeItem('google_first_login');
+
+              // Clear the new registration flag
+              sessionStorage.removeItem('is_new_registration');
+
+              // Set auth_success flag to ensure Dashboard shows welcome message
+              sessionStorage.setItem('auth_success', 'true');
+
+              // Make sure welcome_email_sent is not set in localStorage
+              localStorage.removeItem('welcome_email_sent');
+
+              console.log('OTP Verification: Set is_first_login flag to true for welcome email');
+              console.log('OTP Verification: Cleared welcome_email_sent from localStorage');
+            }
 
             // Complete the login process with the data from the response
             login(response.data.token, response.data.user);
@@ -207,6 +245,35 @@ const OTPVerification = () => {
         // Show success toast
         toast.success('OTP verified successfully!');
 
+        // Check if this is a first-time login (from server response)
+        const isFirstLogin = response.data.isFirstLogin === true;
+
+        // Check if this is a new registration (from signup process)
+        const isNewRegistration = sessionStorage.getItem('is_new_registration') === 'true';
+
+        // If this is a first login or a new registration, set the flag for the Dashboard to handle
+        if (isFirstLogin || isNewRegistration) {
+          console.log('First-time login detected, setting flag for Dashboard to send welcome email');
+
+          // Set the first login flag
+          sessionStorage.setItem('is_first_login', 'true');
+
+          // Make sure the Google first login flag is NOT set for regular logins
+          sessionStorage.removeItem('google_first_login');
+
+          // Clear the new registration flag
+          sessionStorage.removeItem('is_new_registration');
+
+          // Set auth_success flag to ensure Dashboard shows welcome message
+          sessionStorage.setItem('auth_success', 'true');
+
+          // Make sure welcome_email_sent is not set in localStorage
+          localStorage.removeItem('welcome_email_sent');
+
+          console.log('OTP Verification: Set is_first_login flag to true for welcome email');
+          console.log('OTP Verification: Cleared welcome_email_sent from localStorage');
+        }
+
         // Complete the login process with the stored token and user data
         login(token, user);
 
@@ -219,12 +286,71 @@ const OTPVerification = () => {
         // Redirect to dashboard
         navigate('/dashboard');
       } else {
-        // OTP verification failed
-        toast.error(response.data.message || 'Invalid OTP. Please try again.');
+        // OTP verification failed - stay on verification page
+        console.error('OTP verification failed:', response.data);
+
+        // Show error toast with more descriptive message
+        toast.error(response.data.message || 'The OTP you entered is incorrect. Please check the code and try again.', {
+          id: 'otp-verification-error',
+          duration: 5000
+        });
+
+        // Reset the slider after failed verification
+        setTimeout(() => {
+          setIsPoweringOff(false);
+          controls.start({ x: 0 });
+          x.set(0);
+        }, 1000);
+
+        // Clear the OTP fields for a fresh attempt
+        setOtp(['', '', '', '', '', '']);
+
+        // Focus on the first input field
+        if (inputRefs.current[0]) {
+          inputRefs.current[0].focus();
+        }
+
+        // We're staying on the verification page, so no navigation happens
+        console.log('Staying on verification page due to incorrect OTP');
       }
     } catch (error) {
       console.error('Error verifying OTP:', error);
-      toast.error('Failed to verify OTP. Please try again.');
+
+      // Check if it's an axios error with a response
+      if (axios.isAxiosError(error) && error.response) {
+        console.error('Server response:', error.response.data);
+        // Show the specific error message from the server if available
+        toast.error(error.response.data.message || 'The OTP you entered is incorrect. Please check the code and try again.', {
+          id: 'otp-verification-error',
+          duration: 5000
+        });
+      } else {
+        toast.error('The OTP you entered is incorrect. Please check the code and try again.', {
+          id: 'otp-verification-error',
+          duration: 5000
+        });
+      }
+
+      // Log that we're staying on the verification page
+      console.log('Staying on verification page due to OTP verification error');
+
+      // Reset the slider after error
+      setTimeout(() => {
+        setIsPoweringOff(false);
+        controls.start({ x: 0 });
+        x.set(0);
+      }, 1000);
+
+      // Clear the OTP fields for a fresh attempt
+      setOtp(['', '', '', '', '', '']);
+
+      // Focus on the first input field
+      if (inputRefs.current[0]) {
+        inputRefs.current[0].focus();
+      }
+
+      // We're staying on the verification page, so no navigation happens
+      console.log('Staying on verification page due to OTP verification error');
     } finally {
       setIsLoading(false);
     }
@@ -241,9 +367,10 @@ const OTPVerification = () => {
       const storedPhone = sessionStorage.getItem('verificationPhone') || '+1234567890';
       const storedEmail = sessionStorage.getItem('verificationEmail');
 
-      // Call the server's send-otp endpoint
+      // Call the server's send-otp endpoint with both phone and email
       const response = await axios.post(`${serverUrl}/api/auth/send-otp`, {
-        phone: storedPhone.replace('+', '')
+        phone: storedPhone.replace('+', ''),
+        email: storedEmail // Include email to help with OTP verification
       });
 
       // Dismiss loading toast
@@ -257,6 +384,8 @@ const OTPVerification = () => {
           // Initialize EmailJS
           emailjs.init("C9rw1HuEBWiPQBXxZ");
 
+          console.log('Resending OTP email with value:', otpValue);
+
           // Send OTP email using EmailJS
           await emailjs.send(
             "service_zs8dfds", // Your EmailJS service ID
@@ -268,6 +397,12 @@ const OTPVerification = () => {
               phoneNumber: storedPhone
             }
           );
+
+          // Store the OTP in sessionStorage for verification (only in development)
+          if (import.meta.env.DEV) {
+            sessionStorage.setItem('debug_otp', otpValue);
+            console.log('OTP stored in sessionStorage for debugging:', otpValue);
+          }
 
           console.log('OTP email resent successfully');
         } catch (emailError) {

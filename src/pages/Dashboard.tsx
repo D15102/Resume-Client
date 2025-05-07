@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useDropzone } from "react-dropzone";
 import { Upload, FileText, AlertCircle, CheckCircle } from "lucide-react";
 import toast from "react-hot-toast";
@@ -42,7 +42,8 @@ const Dashboard = () => {
   const [file, setFile] = useState<File | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [score, setScore] = useState<ResumeScore | null>(null);
-  const [emailSent, setEmailSent] = useState(false);
+  // Use a ref instead of state to track email sent status to prevent re-renders
+  const emailSentRef = useRef(false);
   const [tourShown, setTourShown] = useState(false);
 
   // Function to check if the tour has been completed
@@ -243,10 +244,45 @@ const Dashboard = () => {
 
   // Function to send welcome email
   const sendWelcomeEmail = async (name: string, email: string) => {
-    if (emailSent) return; // Prevent multiple emails
+    console.log("Dashboard: sendWelcomeEmail called for:", email);
+
+    // Check if email has already been sent in this session
+    if (emailSentRef.current) {
+      console.log("Dashboard: Email already sent in this session, skipping");
+      return; // Prevent multiple emails in the same session
+    }
+
+    // Check if welcome email has been sent before (from localStorage)
+    const welcomeEmailSentBefore = localStorage.getItem("welcome_email_sent") === "true";
+    if (welcomeEmailSentBefore) {
+      console.log("Dashboard: Welcome email was sent in a previous session, skipping");
+      // Clear any first login flags to prevent duplicate emails
+      sessionStorage.removeItem("is_first_login");
+      sessionStorage.removeItem("google_first_login");
+      return; // Prevent sending welcome email again
+    }
+
+    // Check if this is a first login
+    const isFirstLogin = sessionStorage.getItem("is_first_login") === "true";
+    console.log("Dashboard: Is first login check for welcome email:", isFirstLogin);
+
+    // Only send welcome email for first-time users
+    if (!isFirstLogin) {
+      console.log("Dashboard: Not sending welcome email - not a first login");
+      return;
+    }
 
     try {
-      console.log("Dashboard: Sending welcome email to:", email);
+      console.log("Dashboard: Preparing to send welcome email to user:", email);
+
+      // Set flag before sending to prevent duplicate emails during this session
+      emailSentRef.current = true;
+
+      // Show sending toast
+      toast.loading("Sending welcome email...", {
+        id: "welcome-email-sending",
+        duration: 3000,
+      });
 
       // Initialize EmailJS
       emailjs.init("C9rw1HuEBWiPQBXxZ");
@@ -261,17 +297,57 @@ const Dashboard = () => {
         }
       );
 
-      console.log("Dashboard: Welcome email sent successfully");
-      setEmailSent(true);
-      toast.success("Welcome email sent!", {
-        id: "dashboard-email-success",
-        duration: 5000,
+      console.log("Dashboard: Welcome email sent successfully to user");
+
+      // Dismiss loading toast
+      toast.dismiss("welcome-email-sending");
+
+      // Show success toast
+      toast.success("Welcome email sent successfully!", {
+        id: "welcome-email-success",
+        duration: 3000,
       });
+
+      // Store in localStorage that welcome email has been sent AFTER successful sending
+      localStorage.setItem("welcome_email_sent", "true");
+
+      // Clear the first login flags after sending to prevent duplicate emails
+      sessionStorage.removeItem("is_first_login");
+      sessionStorage.removeItem("google_first_login");
+      console.log("Dashboard: Cleared first login flags after sending welcome email");
+
+      // Update user's welcomeEmailSent flag in the database
+      try {
+        const token = localStorage.getItem("token");
+        if (token) {
+          await fetch(`${serverUrl}/api/auth/update-welcome-email-status`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ welcomeEmailSent: true })
+          });
+          console.log("Dashboard: Updated welcomeEmailSent status in database");
+        }
+      } catch (updateError) {
+        console.error("Dashboard: Error updating welcomeEmailSent status:", updateError);
+        // Don't block the process if this fails
+      }
     } catch (error) {
       console.error("Dashboard: Error sending welcome email:", error);
+
+      // Dismiss loading toast
+      toast.dismiss("welcome-email-sending");
+
+      // Show error toast
       toast.error("Could not send welcome email. Please try again later.", {
-        id: "dashboard-email-error",
+        id: "welcome-email-error",
+        duration: 5000,
       });
+
+      // Reset the emailSent flag so we can try again
+      emailSentRef.current = false;
     }
   };
 
@@ -299,143 +375,104 @@ const Dashboard = () => {
   // Check for auth_success flag in sessionStorage (set by AuthCallback)
   useEffect(() => {
     console.log("Dashboard: Checking authentication flags");
-    const authSuccess = sessionStorage.getItem("auth_success");
-    const isFirstLogin = sessionStorage.getItem("is_first_login");
 
-    console.log("Dashboard: Auth success flag =", authSuccess);
-    console.log("Dashboard: Is first login flag =", isFirstLogin);
-
-    if (authSuccess === "true") {
-      // Clear the flag
-      sessionStorage.removeItem("auth_success");
-      console.log("Dashboard: Cleared auth_success flag");
-
-      // Show different welcome message based on first login status
-      if (isFirstLogin === "true") {
-        // Clear the first login flag
-        sessionStorage.removeItem("is_first_login");
-        console.log("Dashboard: Cleared is_first_login flag");
-
-        // Show special welcome message for first-time users
-        toast.success(
-          "Welcome to SkillSync! We're sending you a welcome email.",
-          {
-            id: "first-login-welcome",
-            duration: 6000,
-          }
-        );
-        console.log("Dashboard: Showed first-time user welcome message");
-        // First login detected - no need to start tour here as it's started by default
-        // Try to send welcome email if we have user data
-        if (user && user.name && user.email) {
-          sendWelcomeEmail(user.name, user.email);
-        } else {
-          // Try to get user data from localStorage
-          const storedUser = localStorage.getItem("user");
-          if (storedUser) {
-            try {
-              const userData = JSON.parse(storedUser);
-              if (userData.name && userData.email) {
-                sendWelcomeEmail(userData.name, userData.email);
-              }
-            } catch (e) {
-              console.error("Dashboard: Error parsing user data for email:", e);
-            }
-          }
-        }
-      } else {
-        // Show regular welcome message for returning users
-        toast.success("Welcome back to your dashboard!", {
-          id: "dashboard-welcome",
-          duration: 3000,
-        });
-        console.log("Dashboard: Showed returning user welcome message");
-
-        // Returning user detected - no need to start tour here as it's started by default
-      }
-    } else {
-      // Check localStorage as a fallback
-      const storedUser = localStorage.getItem("user");
-      const storedToken = localStorage.getItem("token");
-
-      if (storedUser && storedToken) {
-        try {
-          const userData = JSON.parse(storedUser);
-          console.log("Dashboard: User data from localStorage:", userData);
-
-          // Try to decode the JWT token to check for isFirstLogin
-          try {
-            const parts = storedToken.split(".");
-            if (parts.length === 3) {
-              const base64Url = parts[1];
-              const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-
-              // Add padding if needed
-              const padding = "=".repeat((4 - (base64.length % 4)) % 4);
-              const paddedBase64 = base64 + padding;
-
-              // Decode base64
-              const rawPayload = atob(paddedBase64);
-
-              // Convert to JSON string
-              const jsonPayload = decodeURIComponent(
-                Array.from(rawPayload)
-                  .map(
-                    (c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)
-                  )
-                  .join("")
-              );
-
-              // Parse the JWT payload
-              const payload = JSON.parse(jsonPayload);
-              console.log("Dashboard: Token payload:", payload);
-
-              // Check for isFirstLogin flag
-              if (payload.isFirstLogin === true) {
-                console.log(
-                  "Dashboard: First login detected from token payload"
-                );
-
-                // Show special welcome message for first-time users
-                toast.success(
-                  "Welcome to SkillSync! We're sending you a welcome email.",
-                  {
-                    id: "first-login-welcome-from-token",
-                    duration: 6000,
-                  }
-                );
-
-                // Set the flag in sessionStorage for future reference
-                sessionStorage.setItem("is_first_login", "true");
-
-                // Try to send welcome email if we have user data
-                if (userData.name && userData.email) {
-                  sendWelcomeEmail(userData.name, userData.email);
-                }
-              }
-
-              // Token-loaded user detected - no need to start tour here as it's started by default
-            }
-          } catch (tokenError) {
-            console.error("Dashboard: Error decoding token:", tokenError);
-          }
-        } catch (e) {
-          console.error("Dashboard: Error parsing user data:", e);
-
-          // Error parsing user data - no need to start tour here as it's started by default
-        }
-      } else {
-        // No stored user data - no need to start tour here as it's started by default
-        console.log("No stored user data detected");
-      }
-    }
-
-    // Verify authentication
+    // Verify authentication first
     if (!isAuthenticated) {
       console.log("User not authenticated, redirecting to login");
       navigate("/login");
+      return;
     }
-  }, [isAuthenticated, navigate]);
+
+    // Log all session storage items for debugging
+    console.log("Dashboard: Session storage items:");
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key) {
+        console.log(`- ${key}: ${sessionStorage.getItem(key)}`);
+      }
+    }
+
+    // Check if welcome email has been sent before (from localStorage)
+    const welcomeEmailSentBefore = localStorage.getItem("welcome_email_sent") === "true";
+    console.log("Dashboard: Welcome email sent before:", welcomeEmailSentBefore ? "YES" : "NO");
+
+    const authSuccess = sessionStorage.getItem("auth_success");
+    const isFirstLogin = sessionStorage.getItem("is_first_login");
+    const isGoogleFirstLogin = sessionStorage.getItem("google_first_login");
+
+    console.log("Dashboard: Auth success flag =", authSuccess);
+    console.log("Dashboard: Is first login flag =", isFirstLogin);
+    console.log("Dashboard: Is Google first login flag =", isGoogleFirstLogin);
+
+    // Only proceed with welcome email if it hasn't been sent before
+    if (!welcomeEmailSentBefore && isFirstLogin === "true") {
+      console.log("Dashboard: First login detected, will send welcome email");
+
+      // Show special welcome message for first-time users
+      toast.success(
+        "Welcome to SkillSync! We're glad you're here.",
+        {
+          id: "first-login-welcome",
+          duration: 6000,
+        }
+      );
+      console.log("Dashboard: Showed first-time user welcome message");
+
+      // Try to send welcome email if we have user data
+      if (user && user.name && user.email) {
+        console.log("Dashboard: Sending welcome email using current user data");
+        sendWelcomeEmail(user.name, user.email);
+      } else {
+        // Try to get user data from localStorage
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+          try {
+            const userData = JSON.parse(storedUser);
+            if (userData.name && userData.email) {
+              console.log("Dashboard: Sending welcome email using stored user data");
+              sendWelcomeEmail(userData.name, userData.email);
+            }
+          } catch (e) {
+            console.error("Dashboard: Error parsing user data for email:", e);
+          }
+        } else {
+          console.error("Dashboard: No user data available to send welcome email");
+        }
+      }
+      // Note: The first login flags are cleared in the sendWelcomeEmail function
+      // after the email is successfully sent
+    } else if (welcomeEmailSentBefore) {
+      console.log("Dashboard: Welcome email was sent in a previous session");
+      // Clear any first login flags to prevent duplicate emails
+      sessionStorage.removeItem("is_first_login");
+      sessionStorage.removeItem("google_first_login");
+
+      // Show regular welcome message for returning users
+      toast.success("Welcome back to your dashboard!", {
+        id: "dashboard-welcome",
+        duration: 3000,
+      });
+      console.log("Dashboard: Showed returning user welcome message");
+    } else if (authSuccess === "true") {
+      // Clear the auth success flag
+      sessionStorage.removeItem("auth_success");
+      console.log("Dashboard: Cleared auth_success flag");
+
+      // Show regular welcome message for returning users
+      toast.success("Welcome back to your dashboard!", {
+        id: "dashboard-welcome",
+        duration: 3000,
+      });
+      console.log("Dashboard: Showed returning user welcome message");
+    } else {
+      // Default welcome message if no specific condition is met
+      toast.success("Welcome to your dashboard!", {
+        id: "dashboard-welcome",
+        duration: 3000,
+      });
+      console.log("Dashboard: Showed default welcome message");
+    }
+  }, [isAuthenticated, navigate, user]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];

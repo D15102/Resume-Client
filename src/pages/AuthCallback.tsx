@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
-import emailjs from '@emailjs/browser';
 
 const AuthCallback = () => {
   const navigate = useNavigate();
@@ -158,31 +157,12 @@ const AuthCallback = () => {
               throw new Error('Token missing required user information');
             }
 
-            // Send welcome email if this is the first login
+            // Set first login flag if this is the first login with Google
+            // The welcome email will be sent from the Dashboard component
             if (isFirstLogin) {
-              console.log('First time login detected, sending welcome email');
-              try {
-                // Initialize EmailJS
-                emailjs.init("C9rw1HuEBWiPQBXxZ");
-
-                // Send welcome email using EmailJS
-                await emailjs.send(
-                  "service_zs8dfds", // Your EmailJS service ID
-                  "template_ixw0fad", // Your EmailJS template ID
-                  {
-                    name: name,
-                    email: email
-                  }
-                );
-                console.log('Welcome email sent successfully');
-                toast.success('Welcome email sent!', {
-                  id: 'welcome-email-success',
-                  duration: 5000
-                });
-              } catch (emailError) {
-                console.error('Error sending welcome email:', emailError);
-                // Don't block the authentication process if email fails
-              }
+              console.log('First time Google login detected, will set flag for Dashboard to send welcome email');
+              // We'll set a special flag for Google first login
+              sessionStorage.setItem('google_first_login', 'true');
             }
 
             // Store token and user info directly from the token
@@ -209,15 +189,18 @@ const AuthCallback = () => {
             // Set a flag in sessionStorage to indicate successful authentication
             sessionStorage.setItem('auth_success', 'true');
 
-            // Set first login flag if applicable
-            console.log('Setting first login flag in sessionStorage:', isFirstLogin === true ? 'YES' : 'NO');
+            // Set Google first login flag if applicable
+            console.log('Setting Google first login flag in sessionStorage:', isFirstLogin === true ? 'YES' : 'NO');
             if (isFirstLogin === true) {
+              // We already set google_first_login flag above, now set the regular first login flag
+              // that the Dashboard component checks
               sessionStorage.setItem('is_first_login', 'true');
-              console.log('First login flag set in sessionStorage');
+              console.log('First login flags set in sessionStorage for Google login');
             } else {
-              // Make sure to remove any existing flag
+              // Make sure to remove any existing flags
               sessionStorage.removeItem('is_first_login');
-              console.log('First login flag removed from sessionStorage (not first login)');
+              sessionStorage.removeItem('google_first_login');
+              console.log('First login flags removed from sessionStorage (not first Google login)');
             }
 
             // In production, also store the auth state in sessionStorage
