@@ -205,7 +205,11 @@ const EditResume = () => {
 
   // Function to clear the current resume data from localStorage
   const clearResumeData = () => {
+    // Remove both resume data and analysis score
     localStorage.removeItem('currentResumeData');
+    localStorage.removeItem('resumeAnalysisScore');
+    console.log("EditResume: Cleared resume data and analysis score from localStorage");
+
     // Redirect to dashboard
     toast.success("Successfully Cleared Resume 😁",{duration : 900})
     window.location.href = '/dashboard';

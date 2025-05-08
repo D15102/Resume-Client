@@ -351,6 +351,17 @@ const Dashboard = () => {
     }
   };
 
+  // Helper function to safely parse JSON from localStorage
+  const getStoredResumeData = () => {
+    try {
+      const data = localStorage.getItem('currentResumeData');
+      return data ? JSON.parse(data) : null;
+    } catch (error) {
+      console.error("Error parsing resume data from localStorage:", error);
+      return null;
+    }
+  };
+
   // Start the tour automatically when the component mounts
   useEffect(() => {
     console.log("Dashboard: Component mounted, checking if tour should be shown");
@@ -369,6 +380,93 @@ const Dashboard = () => {
       }, 1500);
     } else {
       console.log("Tour already completed, won't show by default");
+    }
+
+    // Check for stored resume data
+    const storedResumeData = getStoredResumeData();
+    if (storedResumeData) {
+      console.log("Dashboard: Found stored resume data, restoring state");
+
+      // Create a File object from the stored data if possible
+      if (storedResumeData.name && storedResumeData.type && storedResumeData.content) {
+        try {
+          // For PDF files stored as data URLs
+          if (storedResumeData.format === "pdf" && typeof storedResumeData.content === "string") {
+            // Convert data URL to Blob
+            let contentBlob;
+            if (storedResumeData.content.startsWith('data:application/pdf')) {
+              // Extract base64 data from data URL
+              const base64Data = storedResumeData.content.split(',')[1];
+              const byteCharacters = atob(base64Data);
+              const byteArrays = [];
+
+              for (let i = 0; i < byteCharacters.length; i++) {
+                byteArrays.push(byteCharacters.charCodeAt(i));
+              }
+
+              contentBlob = new Blob([new Uint8Array(byteArrays)], { type: 'application/pdf' });
+            } else {
+              // Handle base64 string without data URL prefix
+              const byteCharacters = atob(storedResumeData.content);
+              const byteArrays = [];
+
+              for (let i = 0; i < byteCharacters.length; i++) {
+                byteArrays.push(byteCharacters.charCodeAt(i));
+              }
+
+              contentBlob = new Blob([new Uint8Array(byteArrays)], { type: 'application/pdf' });
+            }
+
+            // Create File object from Blob
+            const restoredFile = new File([contentBlob], storedResumeData.name, { type: storedResumeData.type });
+            setFile(restoredFile);
+
+            // If we don't have stored analysis results, try to analyze the restored file
+            const storedScore = localStorage.getItem('resumeAnalysisScore');
+            if (!storedScore) {
+              console.log("Dashboard: No stored analysis results, will analyze restored file");
+              // Use a small timeout to ensure the file state is updated
+              setTimeout(() => analyzeResume(restoredFile), 500);
+            }
+          }
+          // For DOCX files
+          else if (storedResumeData.format === "docx" && typeof storedResumeData.content === "string") {
+            // Convert base64 to Blob
+            const byteCharacters = atob(storedResumeData.content);
+            const byteArrays = [];
+
+            for (let i = 0; i < byteCharacters.length; i++) {
+              byteArrays.push(byteCharacters.charCodeAt(i));
+            }
+
+            const contentBlob = new Blob([new Uint8Array(byteArrays)], { type: storedResumeData.type });
+            const restoredFile = new File([contentBlob], storedResumeData.name, { type: storedResumeData.type });
+            setFile(restoredFile);
+
+            // If we don't have stored analysis results, try to analyze the restored file
+            const storedScore = localStorage.getItem('resumeAnalysisScore');
+            if (!storedScore) {
+              console.log("Dashboard: No stored analysis results, will analyze restored file");
+              // Use a small timeout to ensure the file state is updated
+              setTimeout(() => analyzeResume(restoredFile), 500);
+            }
+          }
+
+          // Check if we have stored analysis results
+          const storedScore = localStorage.getItem('resumeAnalysisScore');
+          if (storedScore) {
+            try {
+              const parsedScore = JSON.parse(storedScore);
+              setScore(parsedScore);
+              console.log("Dashboard: Restored analysis score from localStorage");
+            } catch (error) {
+              console.error("Error parsing stored score:", error);
+            }
+          }
+        } catch (error) {
+          console.error("Error restoring file from localStorage:", error);
+        }
+      }
     }
   }, []);
 
@@ -513,6 +611,13 @@ const Dashboard = () => {
 
       if (response.ok) {
         setScore(data);
+        // Save analysis results to localStorage for persistence
+        try {
+          localStorage.setItem('resumeAnalysisScore', JSON.stringify(data));
+          console.log("Dashboard: Saved analysis results to localStorage");
+        } catch (error) {
+          console.error("Error saving analysis results to localStorage:", error);
+        }
         toast.success("Resume analyzed successfully!");
       } else {
         toast.error(data.message || "Failed to analyze resume");
