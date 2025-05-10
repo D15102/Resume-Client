@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { LogIn, Mail, Lock } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -8,6 +8,7 @@ import { IoMdEye } from "react-icons/io";
 import { useTheme } from "../context/ThemeContext";
 import { motion } from 'framer-motion';
 import emailjs from '@emailjs/browser';
+import ReCAPTCHA from "react-google-recaptcha";
 
 const pageVariants = {
   initial: { opacity: 0, y: -20 },
@@ -29,8 +30,11 @@ const buttonVariants = {
 const Login = () => {
   // Use the proxy configured in vite.config.ts instead of the direct server URL
   const serverUrl = import.meta.env.VITE_SERVER_URL || '';
+  const recaptchaKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY || '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'; // Default is Google's test key
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [captchaVerified, setCaptchaVerified] = useState(false);
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
   const navigate = useNavigate();
   const { login, isAuthenticated } = useAuth();
   const { isLight } = useTheme();
@@ -42,8 +46,26 @@ const Login = () => {
     }
   }, [isAuthenticated, navigate]);
 
+  // Handle reCAPTCHA verification
+  const handleCaptchaChange = (token: string | null) => {
+    if (token) {
+      console.log("reCAPTCHA verified:", token.substring(0, 10) + "...");
+      setCaptchaVerified(true);
+    } else {
+      console.log("reCAPTCHA verification failed or expired");
+      setCaptchaVerified(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check if reCAPTCHA is verified
+    if (!captchaVerified) {
+      toast.error("Please verify that you are not a robot");
+      return;
+    }
+
     try {
       console.log("Server URL:", serverUrl);
       console.log("Attempting to login with:", { email, password: "********" });
@@ -51,13 +73,20 @@ const Login = () => {
       // Show loading toast
       toast.loading('Verifying credentials...', { id: 'login-loading' });
 
+      // Get the reCAPTCHA token
+      const token = recaptchaRef.current?.getValue() || '';
+
       // First, check if the user exists in the database
       const response = await fetch(`${serverUrl}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email,
+          password,
+          recaptchaToken: token
+        }),
         credentials: "include"
       });
 
@@ -390,6 +419,16 @@ const Login = () => {
                 Forgot password?
               </a>
             </div>
+          </div>
+
+          {/* reCAPTCHA */}
+          <div className="flex justify-center">
+            <ReCAPTCHA
+              ref={recaptchaRef}
+              sitekey={recaptchaKey}
+              onChange={handleCaptchaChange}
+              theme={isLight ? 'light' : 'dark'}
+            />
           </div>
 
           <div>
